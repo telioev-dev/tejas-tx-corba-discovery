@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="INFO">
+    <Properties>
+        <Property name="log.fileName" value="startup"/>
+        <Property name="log.fileExtension" value="log"/>
+        <Property name="log.directory" value="/opt/logs/stitching"/>
+    </Properties>
+    <Appenders>
+        <!-- Console Appender -->
+        <Console name="Console" target="SYSTEM_OUT">
+            <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss} [%t] %-5level %logger[%L] - %msg%n"/>
+        </Console>
+
+        <!-- File Appender -->
+        <File name="FileLogger" fileName="${log.directory}/${sys:log.fileName}.${log.fileExtension}" append="true">
+            <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss} [%t] %-5level %logger[%L] - %msg%n"/>
+        </File>
+    </Appenders>
+    <Loggers>
+        <!-- Root Logger -->
+        <Root level="${sys:log.level:-INFO}">
+            <AppenderRef ref="Console"/>
+            <AppenderRef ref="FileLogger"/>
+        </Root>
+
+        <!-- Custom Logger for Specific Packages -->
+        <Logger name="com.teliolabs" level="${sys:log.level:-INFO}" additivity="false">
+            <AppenderRef ref="Console"/>
+            <AppenderRef ref="FileLogger"/>
+        </Logger>
+    </Loggers>
+</Configuration>
