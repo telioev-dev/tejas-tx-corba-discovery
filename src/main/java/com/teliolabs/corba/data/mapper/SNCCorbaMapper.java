@@ -16,6 +16,7 @@ import org.tmforum.mtnm.subnetworkConnection.TPData_T;
 import org.tmforum.mtnm.topologicalLink.TopologicalLink_T;
 
 import java.time.ZonedDateTime;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -111,5 +112,10 @@ public class SNCCorbaMapper implements CorbaMapper<SubnetworkConnection_T, SNC> 
     // A method to map a list of CORBA objects to DTOs
     public List<SNC> mapFromCorbaList(List<SubnetworkConnection_T> elementTs) {
         return elementTs.stream().map(this::mapFromCorba).collect(Collectors.toList());
+    }
+
+    // A method to map a list of CORBA objects to DTOs
+    public List<SNC> mapFromCorbaArray(SubnetworkConnection_T [] elementTs) {
+        return Arrays.stream(elementTs).map(this::mapFromCorba).collect(Collectors.toList());
     }
 }

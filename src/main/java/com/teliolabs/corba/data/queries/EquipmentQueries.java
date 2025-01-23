@@ -14,8 +14,8 @@ public final class EquipmentQueries {
 
     public static final String INSERT_SQL = "INSERT INTO %s " +
             "(me_name, me_label, user_label, software_version, serial_number, " +
-            "expected_equipment, installed_equipment, location) " +
-            "VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+            "expected_equipment, installed_equipment, location, last_modified_date) " +
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
     public static final String SELECT_ALL_SQL = "SELECT * FROM %s";
 

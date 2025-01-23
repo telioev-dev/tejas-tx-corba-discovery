@@ -8,14 +8,16 @@ import com.teliolabs.corba.data.queries.EquipmentQueries;
 import com.teliolabs.corba.utils.DBUtils;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.log4j.Log4j2;
 import lombok.extern.slf4j.Slf4j;
 
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.sql.Timestamp;
 import java.util.List;
 
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
-@Slf4j
+@Log4j2
 public class EquipmentRepository extends GenericRepository<EquipmentEntity> {
 
     private static final EquipmentRepository INSTANCE = new EquipmentRepository();
@@ -47,5 +49,6 @@ public class EquipmentRepository extends GenericRepository<EquipmentEntity> {
         preparedStatement.setString(6, entity.getExpectedEquipment());
         preparedStatement.setString(7, entity.getInstalledEquipment());
         preparedStatement.setString(8, entity.getLocation());
+        preparedStatement.setTimestamp(9, Timestamp.from(entity.getLastModifiedDate().toInstant()));
     }
 }

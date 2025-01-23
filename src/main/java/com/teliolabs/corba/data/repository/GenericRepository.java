@@ -49,17 +49,13 @@ public abstract class GenericRepository<T> {
 
         log.debug("deleteSQL: {}", deleteSQL);
         log.debug("insertSQL: {}", insertSQL);
-        
+
         int totalInserted = 0;
 
         try (Connection connection = DataSourceConfig.getHikariDataSource().getConnection()) {
             connection.setAutoCommit(false);
 
-            try (PreparedStatement deleteStatement = connection.prepareStatement(deleteSQL); PreparedStatement ps = connection.prepareStatement(insertSQL)) {
-
-                // Step 1: Execute DELETE statement
-                int rowsDeleted = deleteStatement.executeUpdate();
-                log.debug("Rows deleted successfully: {}", rowsDeleted);
+            try (PreparedStatement ps = connection.prepareStatement(insertSQL)) {
                 int batchCounter = 0;
 
                 for (T entity : entities) {
@@ -77,8 +73,6 @@ public abstract class GenericRepository<T> {
                 if (batchCounter > 0) {
                     totalInserted += executeBatch(ps, connection);
                 }
-
-                System.out.println("Total rows inserted: " + totalInserted);
             } catch (SQLException e) {
                 connection.rollback();
                 System.err.println("Error inserting entities. Transaction rolled back.");
@@ -91,6 +85,60 @@ public abstract class GenericRepository<T> {
 
         return totalInserted;
     }
+
+//    public int insertEntities(List<T> entities, String deleteSQLTemplate, String insertSQLTemplate, int batchSize) throws SQLException {
+//        if (entities == null || entities.isEmpty()) {
+//            System.out.println("No entities to insert.");
+//            return 0;
+//        }
+//
+//        String deleteSQL = String.format(deleteSQLTemplate, getTableName());
+//        String insertSQL = String.format(insertSQLTemplate, getTableName());
+//
+//        log.debug("deleteSQL: {}", deleteSQL);
+//        log.debug("insertSQL: {}", insertSQL);
+//
+//        int totalInserted = 0;
+//
+//        try (Connection connection = DataSourceConfig.getHikariDataSource().getConnection()) {
+//            connection.setAutoCommit(false);
+//
+//            try (PreparedStatement deleteStatement = connection.prepareStatement(deleteSQL); PreparedStatement ps = connection.prepareStatement(insertSQL)) {
+//
+//                // Step 1: Execute DELETE statement
+//                int rowsDeleted = deleteStatement.executeUpdate();
+//                log.debug("Rows deleted successfully: {}", rowsDeleted);
+//                int batchCounter = 0;
+//
+//                for (T entity : entities) {
+//                    setPreparedStatementParameters(ps, entity);
+//                    ps.addBatch();
+//                    batchCounter++;
+//
+//                    if (batchCounter == batchSize) {
+//                        totalInserted += executeBatch(ps, connection);
+//                        batchCounter = 0;
+//                    }
+//                }
+//
+//                // Execute remaining batch
+//                if (batchCounter > 0) {
+//                    totalInserted += executeBatch(ps, connection);
+//                }
+//
+//                System.out.println("Total rows inserted: " + totalInserted);
+//            } catch (SQLException e) {
+//                connection.rollback();
+//                System.err.println("Error inserting entities. Transaction rolled back.");
+//                throw e;
+//            }
+//        } catch (SQLException e) {
+//            System.err.println("Error establishing database connection.");
+//            throw e;
+//        }
+//
+//        return totalInserted;
+//    }
 
     private int executeBatch(PreparedStatement ps, Connection connection) throws SQLException {
         int[] batchResults = ps.executeBatch();

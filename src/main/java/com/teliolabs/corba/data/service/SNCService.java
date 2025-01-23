@@ -43,8 +43,8 @@ public class SNCService {
     private static SNCService instance;
     private final SNCRepository sncRepository;
 
-    private SubnetworkConnectionList_THolder sncList = new SubnetworkConnectionList_THolder();
-    private SNCIterator_IHolder sncIterator = new SNCIterator_IHolder();
+    private SubnetworkConnectionList_THolder subnetworkConnectionListTHolder = new SubnetworkConnectionList_THolder();
+    private SNCIterator_IHolder sncIteratorIHolder = new SNCIterator_IHolder();
     private List<SubnetworkConnection_T> subnetworkConnectionTList = new ArrayList<>();
     private List<SNC> sncs = new ArrayList<>();
     private Integer discoveredSncCount = 0;
@@ -114,15 +114,22 @@ public class SNCService {
 
     private void processSubnetwork(MultiLayerSubnetwork_T subnetwork, CorbaConnection corbaConnection) throws ProcessingFailureException, SQLException {
         int HOW_MANY = ExecutionContext.getInstance().getCircle().getSncHowMuch();
+        SubnetworkConnectionList_THolder subnetworkConnectionListTHolder = new SubnetworkConnectionList_THolder();
+        SNCIterator_IHolder sncIteratorIHolder = new SNCIterator_IHolder();
         short[] rateList = new short[0];
         try {
             long start = System.currentTimeMillis();
             corbaConnection.getMlsnManager().getAllSubnetworkConnections(ExecutionMode.DELTA == ExecutionContext.getInstance().getExecutionMode() ?
-                    buildDeltaSearchCriteria(subnetwork) : subnetwork.name, rateList, HOW_MANY, sncList, sncIterator);
-            Collections.addAll(subnetworkConnectionTList, sncList.value);
-            processSubnetworkConnections(sncList, sncIterator);
+                    buildDeltaSearchCriteria(subnetwork) : subnetwork.name, rateList, HOW_MANY, subnetworkConnectionListTHolder, sncIteratorIHolder);
+            //Collections.addAll(subnetworkConnectionTList, sncList.value);
+            //List<SubnetworkConnection_T> tempList = Arrays.asList(subnetworkConnectionListTHolder.value);
+            SubnetworkConnection_T[] elementTs = subnetworkConnectionListTHolder.value;
+            saveSubnetworkConnections(elementTs);
+            discoveredSncCount = discoveredSncCount + elementTs.length;
+            elementTs = null;
+            processSubnetworkConnections(subnetworkConnectionListTHolder, sncIteratorIHolder);
             long end = System.currentTimeMillis();
-            log.info("Network discovery on Subnetwork {} for total SNCs {} took {} seconds.", SNCUtils.getMultilayerSubnetworkName(subnetwork), subnetworkConnectionTList.size(), (end - start) / 1000);
+            log.info("Network discovery on Subnetwork {} for total SNCs {} took {} seconds.", SNCUtils.getMultilayerSubnetworkName(subnetwork), discoveredSncCount, (end - start) / 1000);
         } catch (Exception e) {
             log.error("Failed to process subnetwork: {}", Arrays.toString(subnetwork.name), e);
             throw e;
@@ -139,9 +146,10 @@ public class SNCService {
                     hasMoreData = iterator.next_n(batchSize, sncListHolder);
                     //Collections.addAll(subnetworkConnectionTList, sncListHolder.value);
                     discoveredSncCount = discoveredSncCount + sncListHolder.value.length;
-                    List<SubnetworkConnection_T> tempList = Arrays.asList(sncListHolder.value);
-                    saveSubnetworkConnections(tempList);
-                    tempList = null;
+                    SubnetworkConnection_T[] elementTs = sncListHolder.value;
+                    //List<SubnetworkConnection_T> tempList = Arrays.asList(sncListHolder.value);
+                    saveSubnetworkConnections(elementTs);
+                    elementTs = null;
                     //log.info("Discovered SNCs so far: {}", subnetworkConnectionTList.size());
                     log.info("Discovered SNCs so far: {}", discoveredSncCount);
                 }
@@ -262,14 +270,14 @@ public class SNCService {
         log.info("Discovered SNCs # {} inserted in {} seconds.", subnetworkConnectionTList.size(), (end - start) / 1000);
     }
 
-    private void saveSubnetworkConnections(List<SubnetworkConnection_T> subnetworkConnections) throws SQLException {
+    private void saveSubnetworkConnections(SubnetworkConnection_T[] subnetworkConnections) throws SQLException {
         long start = System.currentTimeMillis();
         sncRepository.insertSNCs(
-                SNCCorbaMapper.getInstance().mapFromCorbaList(subnetworkConnections),
+                SNCCorbaMapper.getInstance().mapFromCorbaArray(subnetworkConnections),
                 50
         );
         long end = System.currentTimeMillis();
-        log.info("Discovered SNCs # {} inserted in {} seconds.", subnetworkConnections.size(), (end - start) / 1000);
+        log.info("Discovered SNCs # {} inserted in {} seconds.", subnetworkConnections.length, (end - start) / 1000);
         subnetworkConnections = null;
     }
 }

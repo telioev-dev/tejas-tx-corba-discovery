@@ -122,7 +122,7 @@ public class EquipmentService implements ExecutionContextAware {
         long start = System.currentTimeMillis();
         equipmentRepository.insertEquipments(equipmentList, 50);
         long end = System.currentTimeMillis();
-        log.info("Successfully saved {} Equipments in {} seconds.", equipmentOrHolderTList.size(), (end - start) / 1000);
+        log.debug("Successfully saved {} Equipments in {} seconds.", equipmentOrHolderTList.size(), (end - start) / 1000);
     }
 
     private void saveInMemory(List<EquipmentEntity> equipmentList) {
@@ -157,7 +157,7 @@ public class EquipmentService implements ExecutionContextAware {
 
         }
         discoveredEquipmentCount = discoveredEquipmentCount + equipmentOrHolderTList.size();
-        log.debug("getAllEquipment: total EQs discovered so far {}.", discoveredEquipmentCount);
+        log.info("getAllEquipment: total EQs discovered so far {}.", discoveredEquipmentCount);
         saveEquipments(equipmentOrHolderTList);
     }
 

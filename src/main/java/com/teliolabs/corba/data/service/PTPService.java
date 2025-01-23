@@ -96,7 +96,7 @@ public class PTPService {
 
 
     public void runDeltaProcess(CorbaConnection corbaConnection) {
-        discoverTerminationPoints(corbaConnection, ExecutionMode.DELTA);
+        discoverTerminationPoints(corbaConnection);
         //discoverTerminationPointsSync(corbaConnection, ExecutionMode.DELTA);
         if (terminationPoints == null || terminationPoints.isEmpty()) {
             log.debug("No delta PTPs found, returning.");
@@ -138,14 +138,16 @@ public class PTPService {
         }
     }
 
-    public void discoverTerminationPoints(CorbaConnection corbaConnection, ExecutionMode executionMode) {
+    public void discoverTerminationPoints(CorbaConnection corbaConnection) {
         meManager = corbaConnection.getMeManager();
         Map<String, ManagedElement> managedElements = ManagedElementHolder.getInstance().getElements();
+        ExecutionMode executionMode = ExecutionContext.getInstance().getExecutionMode();
         if (managedElements != null && !managedElements.isEmpty()) {
             Set<String> meNamesSet = managedElements.keySet();
             int i = 0;
             for (String meName : meNamesSet) {
-                if (meName.contains("UME")) continue; // IGNORE UMEs for PTP
+                if (ExecutionMode.DELTA == executionMode && meName.contains("UME"))
+                    continue; // IGNORE UMEs for PTP
 
                 log.info("#{} ME '{}' for PTP processing.", i++, meName);
                 try {

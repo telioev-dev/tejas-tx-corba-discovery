@@ -7,14 +7,17 @@ import com.teliolabs.corba.data.dto.ManagedElement;
 import com.teliolabs.corba.data.holder.ManagedElementHolder;
 import com.teliolabs.corba.utils.EquipmentUtils;
 import com.teliolabs.corba.utils.ManagedElementUtils;
+import lombok.extern.log4j.Log4j2;
 import org.tmforum.mtnm.equipment.EquipmentOrHolder_T;
 import org.tmforum.mtnm.equipment.Equipment_T;
 
 import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
+@Log4j2
 public class EquipmentCorbaMapper implements CorbaMapper<EquipmentOrHolder_T, EquipmentEntity> {
 
 
@@ -32,7 +35,6 @@ public class EquipmentCorbaMapper implements CorbaMapper<EquipmentOrHolder_T, Eq
 
     @Override
     public EquipmentEntity mapFromCorba(EquipmentOrHolder_T input) {
-
         if (input.discriminator().value() == 0) {
             ZonedDateTime executionTimestamp = ExecutionContext.getInstance().getExecutionTimestamp();
             Map<String, ManagedElement> managedElementMap = ManagedElementHolder.getInstance().getElements();
@@ -49,7 +51,7 @@ public class EquipmentCorbaMapper implements CorbaMapper<EquipmentOrHolder_T, Eq
                     softwareVersion(equipment.installedVersion).
                     serialNumber(equipment.installedSerialNumber).
                     userLabel(equipment.userLabel).lastModifiedDate(executionTimestamp).
-            build();
+                    build();
             return equipmentEntity;
         }
         return null;
@@ -62,6 +64,6 @@ public class EquipmentCorbaMapper implements CorbaMapper<EquipmentOrHolder_T, Eq
 
     @Override
     public List<EquipmentEntity> mapFromCorbaList(List<EquipmentOrHolder_T> elementTs) {
-        return elementTs.stream().map(this::mapFromCorba).collect(Collectors.toList());
+        return elementTs.stream().map(this::mapFromCorba).filter(Objects::nonNull).collect(Collectors.toList());
     }
 }

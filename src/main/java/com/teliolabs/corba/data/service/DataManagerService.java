@@ -145,7 +145,7 @@ public class DataManagerService {
 
 
                 if (executionMode == ExecutionMode.IMPORT) {
-                    ptpService.discoverTerminationPoints(corbaConnection, executionMode);
+                    ptpService.discoverTerminationPoints(corbaConnection);
                 } else if (executionMode == ExecutionMode.DELTA) {
                     ptpService.runDeltaProcess(corbaConnection);
                 } else {
