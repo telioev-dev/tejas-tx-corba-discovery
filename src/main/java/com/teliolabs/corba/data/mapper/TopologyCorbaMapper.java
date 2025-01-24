@@ -13,6 +13,7 @@ import com.teliolabs.corba.utils.TopologyUtils;
 import lombok.extern.log4j.Log4j2;
 import org.tmforum.mtnm.topologicalLink.TopologicalLink_T;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -86,5 +87,9 @@ public class TopologyCorbaMapper implements CorbaMapper<TopologicalLink_T, Topol
     // A method to map a list of CORBA objects to DTOs
     public List<Topology> mapFromCorbaList(List<TopologicalLink_T> elementTs) {
         return elementTs.stream().map(this::mapFromCorba).collect(Collectors.toList());
+    }
+
+    public List<Topology> mapFromCorbaArray(TopologicalLink_T[] elementTs) {
+        return Arrays.stream(elementTs).map(this::mapFromCorba).collect(Collectors.toList());
     }
 }

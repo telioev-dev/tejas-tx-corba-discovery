@@ -166,25 +166,15 @@ public class TopologyRepository {
             return 0;
         }
 
-        String sequenceName = DBUtils.getSequence(DiscoveryItemType.TOPOLOGY);
         String tableName = DBUtils.getTable(DiscoveryItemType.TOPOLOGY);
-        String deleteSQL = String.format(TopologyQueries.DELETE_ALL_SQL, tableName);
-        log.info("DiscoveryItemType.TOPOLOGY SequenceName: {}", sequenceName);
         String sql = String.format(TopologyQueries.INSERT_SQL, tableName);
-        log.info("Insert SQL: {}", sql);
 
         int totalInserted = 0;
 
         try (Connection connection = DataSourceConfig.getHikariDataSource().getConnection()) {
             connection.setAutoCommit(false);
 
-            try (PreparedStatement deleteStatement = connection.prepareStatement(deleteSQL);
-                 PreparedStatement ps = connection.prepareStatement(sql)) {
-
-                // Step 1: Execute DELETE statement
-                int rowsDeleted = deleteStatement.executeUpdate();
-                log.info("These many Topologies deleted successfully: {}", rowsDeleted);
-
+            try (PreparedStatement ps = connection.prepareStatement(sql)) {
                 int batchCounter = 0;
 
                 for (Topology topology : topologies) {

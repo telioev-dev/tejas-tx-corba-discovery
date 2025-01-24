@@ -37,6 +37,7 @@ public class TopologyService {
 
     private static TopologyService instance;
     private final TopologyRepository topologyRepository;
+    private Integer discoveryCount = 0;
 
     // Public method to get the singleton instance
     public static TopologyService getInstance(TopologyRepository topologyRepository) {
@@ -177,16 +178,20 @@ public class TopologyService {
             long start = System.currentTimeMillis();
             corbaConnection.getMlsnManager().getAllTopologicalLinks(ExecutionMode.DELTA == ExecutionContext.getInstance().getExecutionMode() ?
                     buildDeltaSearchCriteria(subnetwork) : subnetwork.name, batchSize, linkListHolder, iteratorHolder);
-            Collections.addAll(topologicalLinkTList, linkListHolder.value);
+            TopologicalLink_T[] topologicalLinkTs = linkListHolder.value;
+            saveTopologies(topologicalLinkTs);
+            discoveryCount = discoveryCount + topologicalLinkTs.length;
+            topologicalLinkTs = null;
+            //Collections.addAll(topologicalLinkTList, linkListHolder.value);
             processTopologicalLinks(linkListHolder, iteratorHolder);
             long end = System.currentTimeMillis();
             log.info("Network discovery for total Topologies {} took {} seconds.", topologicalLinkTList.size(), (end - start) / 1000);
-        } catch (ProcessingFailureException e) {
+        } catch (Exception e) {
             log.error("Failed to process subnetwork: {}", Arrays.toString(subnetwork.name), e);
         }
     }
 
-    private void processTopologicalLinks(TopologicalLinkList_THolder linkListHolder, TopologicalLinkIterator_IHolder iteratorHolder) throws ProcessingFailureException {
+    private void processTopologicalLinks(TopologicalLinkList_THolder linkListHolder, TopologicalLinkIterator_IHolder iteratorHolder) throws ProcessingFailureException, SQLException {
         int batchSize = ExecutionContext.getInstance().getCircle().getTopologyHowMuch();
         if (iteratorHolder.value != null) {
             TopologicalLinkIterator_I iterator = iteratorHolder.value;
@@ -194,10 +199,14 @@ public class TopologyService {
             try {
                 while (hasMoreData) {
                     hasMoreData = iterator.next_n(batchSize, linkListHolder);
-                    Collections.addAll(topologicalLinkTList, linkListHolder.value);
-                    log.info("Topologies discovered so far: {}", topologicalLinkTList.size());
+                    discoveryCount = discoveryCount + linkListHolder.value.length;
+                    TopologicalLink_T[] topologicalLinkTs = linkListHolder.value;
+                    saveTopologies(topologicalLinkTs);
+                    topologicalLinkTs = null;
+                    //Collections.addAll(topologicalLinkTList, linkListHolder.value);
+                    log.info("Topologies discovered so far: {}", discoveryCount);
                 }
-            } catch (ProcessingFailureException e) {
+            } catch (Exception e) {
                 log.error("Error fetching topological links: {}", e.getMessage(), e);
                 throw e;
             }
@@ -213,6 +222,16 @@ public class TopologyService {
         );
         long end = System.currentTimeMillis();
         log.info("Discovered Topologies # {} inserted in {} seconds.", topologicalLinkTList.size(), (end - start) / 1000);
+    }
+
+    private void saveTopologies(TopologicalLink_T[] topologicalLinkTs) throws SQLException {
+        long start = System.currentTimeMillis();
+        topologyRepository.insertTopologies(
+                TopologyCorbaMapper.getInstance().mapFromCorbaArray(topologicalLinkTs),
+                100
+        );
+        long end = System.currentTimeMillis();
+        log.info("Discovered Topologies # {} inserted in {} seconds.", topologicalLinkTs.length, (end - start) / 1000);
     }
 
     private void logSubnetworkDetails(MultiLayerSubnetwork_T subnetwork) {

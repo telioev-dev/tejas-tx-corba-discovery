@@ -4,6 +4,7 @@ import com.teliolabs.corba.application.ExecutionContext;
 import com.teliolabs.corba.application.types.DiscoveryItemType;
 import com.teliolabs.corba.application.types.DiscoverySource;
 import com.teliolabs.corba.application.types.ExecutionMode;
+import com.teliolabs.corba.application.types.JobState;
 import com.teliolabs.corba.data.service.DataManagerFactory;
 import com.teliolabs.corba.data.service.DataManagerService;
 import lombok.extern.log4j.Log4j2;
@@ -23,6 +24,7 @@ public class ImportApplicationRunner implements ApplicationRunner {
     public void run(Map<String, String> args) {
         DiscoveryItemType discoveryItemType = ExecutionContext.getInstance().getEntity();
         log.info("ImportApplicationRunner starts for DiscoveryItemType: {}", discoveryItemType);
+        updateJobState(JobState.RUNNING);
         if (DiscoveryItemType.ME == discoveryItemType) {
             dataManagerService.discoverManagedElements(DiscoverySource.NMS, ExecutionMode.IMPORT);
         } else if (DiscoveryItemType.EQUIPMENT == discoveryItemType) {
@@ -44,8 +46,7 @@ public class ImportApplicationRunner implements ApplicationRunner {
         } else if (DiscoveryItemType.ROUTE == discoveryItemType) {
 
         } else if (DiscoveryItemType.ALL == discoveryItemType) {
-            dataManagerService.startFullDiscovery();
+            //dataManagerService.startFullDiscovery();
         }
-
     }
 }

@@ -53,5 +53,15 @@ public class JobService {
             throw new IllegalArgumentException("Unsupported job type: " + job.getClass());
         }
     }
+
+    public void updateJobStatus(JobEntity job) {
+        if (job instanceof ImportJobEntity) {
+            jobRepository.updateImportJobStatus((ImportJobEntity) job);
+        } else if (job instanceof DeltaJobEntity) {
+            jobRepository.updateDeltaJobStatus((DeltaJobEntity) job);
+        } else {
+            throw new IllegalArgumentException("Unsupported job type: " + job.getClass());
+        }
+    }
 }
 

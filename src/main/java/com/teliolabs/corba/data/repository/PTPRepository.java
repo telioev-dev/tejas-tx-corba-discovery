@@ -75,12 +75,8 @@ public class PTPRepository {
             return 0;
         }
 
-        String sequenceName = DBUtils.getSequence(DiscoveryItemType.PTP);
         String tableName = DBUtils.getTable(DiscoveryItemType.PTP);
-        String deleteSQL = String.format(PTPQueries.DELETE_ALL_SQL, tableName);
-        log.info("DiscoveryItemType.PTP SequenceName: {}", sequenceName);
         String sql = String.format(PTPQueries.INSERT_PTP_SQL, tableName);
-        log.info("Insert SQL: {}", sql);
 
         int totalInserted = 0;
 

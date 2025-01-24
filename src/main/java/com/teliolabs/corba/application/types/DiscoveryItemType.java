@@ -35,6 +35,6 @@ public enum DiscoveryItemType {
                 return c;
             }
         }
-        return DiscoveryItemType.ALL;
+        return null;
     }
 }

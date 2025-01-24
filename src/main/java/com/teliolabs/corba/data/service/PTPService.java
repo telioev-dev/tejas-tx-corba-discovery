@@ -240,7 +240,6 @@ public class PTPService {
 
 
     private void processManagedElementStack(String meName) throws ProcessingFailureException, SQLException {
-        log.info("processManagedElementStack ME: {}", meName);
         neNameArray[1].value = meName;
         List<TerminationPoint_T> terminationPoints = new ArrayList<>();
         int batchSize = ExecutionContext.getInstance().getCircle().getPtpHowMuch();

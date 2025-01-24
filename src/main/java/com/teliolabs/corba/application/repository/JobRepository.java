@@ -140,4 +140,32 @@ public class JobRepository {
     public void updateDeltaJob(DeltaJobEntity job) {
         // Update delta job in the database
     }
+
+    public void updateImportJobStatus(ImportJobEntity importJobEntity) {
+        String sql = "UPDATE IMPORT_JOB SET JOB_STATE = ? WHERE job_id = ?";
+        executeUpdate(sql, importJobEntity.getJobState(), importJobEntity.getJobId());
+    }
+
+    public void updateDeltaJobStatus(DeltaJobEntity deltaJobEntity) {
+        String sql = "UPDATE DELTA_JOB SET JOB_STATE = ? WHERE job_id = ?";
+        executeUpdate(sql, deltaJobEntity.getJobState(), deltaJobEntity.getJobId());
+    }
+
+    private void executeUpdate(String sql, Object... params) {
+        try (Connection connection = DataSourceConfig.getHikariDataSource().getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+
+            for (int i = 0; i < params.length; i++) {
+                statement.setObject(i + 1, params[i]);
+            }
+
+            int rowsUpdated = statement.executeUpdate();
+            if (rowsUpdated == 0) {
+                throw new SQLException("No rows updated for the provided parameters");
+            }
+
+        } catch (SQLException e) {
+            throw new DataAccessException("Error executing update query", e);
+        }
+    }
 }

@@ -47,7 +47,7 @@ public class SNCService {
     private SNCIterator_IHolder sncIteratorIHolder = new SNCIterator_IHolder();
     private List<SubnetworkConnection_T> subnetworkConnectionTList = new ArrayList<>();
     private List<SNC> sncs = new ArrayList<>();
-    private Integer discoveredSncCount = 0;
+    private Integer discoveryCount = 0;
 
 
     // Public method to get the singleton instance
@@ -123,13 +123,13 @@ public class SNCService {
                     buildDeltaSearchCriteria(subnetwork) : subnetwork.name, rateList, HOW_MANY, subnetworkConnectionListTHolder, sncIteratorIHolder);
             //Collections.addAll(subnetworkConnectionTList, sncList.value);
             //List<SubnetworkConnection_T> tempList = Arrays.asList(subnetworkConnectionListTHolder.value);
-            SubnetworkConnection_T[] elementTs = subnetworkConnectionListTHolder.value;
-            saveSubnetworkConnections(elementTs);
-            discoveredSncCount = discoveredSncCount + elementTs.length;
-            elementTs = null;
+            SubnetworkConnection_T[] subnetworkConnectionTs = subnetworkConnectionListTHolder.value;
+            saveSubnetworkConnections(subnetworkConnectionTs);
+            discoveryCount = discoveryCount + subnetworkConnectionTs.length;
+            subnetworkConnectionTs = null;
             processSubnetworkConnections(subnetworkConnectionListTHolder, sncIteratorIHolder);
             long end = System.currentTimeMillis();
-            log.info("Network discovery on Subnetwork {} for total SNCs {} took {} seconds.", SNCUtils.getMultilayerSubnetworkName(subnetwork), discoveredSncCount, (end - start) / 1000);
+            log.info("Network discovery on Subnetwork {} for total SNCs {} took {} seconds.", SNCUtils.getMultilayerSubnetworkName(subnetwork), discoveryCount, (end - start) / 1000);
         } catch (Exception e) {
             log.error("Failed to process subnetwork: {}", Arrays.toString(subnetwork.name), e);
             throw e;
@@ -145,17 +145,14 @@ public class SNCService {
                 while (hasMoreData) {
                     hasMoreData = iterator.next_n(batchSize, sncListHolder);
                     //Collections.addAll(subnetworkConnectionTList, sncListHolder.value);
-                    discoveredSncCount = discoveredSncCount + sncListHolder.value.length;
-                    SubnetworkConnection_T[] elementTs = sncListHolder.value;
+                    discoveryCount = discoveryCount + sncListHolder.value.length;
+                    SubnetworkConnection_T[] subnetworkConnectionTs = sncListHolder.value;
                     //List<SubnetworkConnection_T> tempList = Arrays.asList(sncListHolder.value);
-                    saveSubnetworkConnections(elementTs);
-                    elementTs = null;
+                    saveSubnetworkConnections(subnetworkConnectionTs);
+                    subnetworkConnectionTs = null;
                     //log.info("Discovered SNCs so far: {}", subnetworkConnectionTList.size());
-                    log.info("Discovered SNCs so far: {}", discoveredSncCount);
+                    log.info("Discovered SNCs so far: {}", discoveryCount);
                 }
-            } catch (ProcessingFailureException e) {
-                log.error("Error fetching SNCs : {}", e.getMessage(), e);
-                throw e;
             } catch (Exception e) {
                 log.error("Error fetching SNCs : {}", e.getMessage(), e);
                 throw e;

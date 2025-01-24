@@ -21,6 +21,7 @@ import com.teliolabs.corba.transport.CorbaConnection;
 import com.teliolabs.corba.utils.DateTimeUtils;
 import lombok.extern.log4j.Log4j2;
 import org.apache.logging.log4j.core.config.Configurator;
+import org.tmforum.mtnm.globaldefs.ProcessingFailureException;
 
 import java.sql.Timestamp;
 import java.time.Instant;
@@ -59,6 +60,9 @@ public class TxCorbaDiscoveryApplication {
             // Update job as failed
             e.printStackTrace();
             updateJobStatus(jobEntity, jobService, e);
+            if (e instanceof ProcessingFailureException) {
+                System.exit(444);
+            }
         }
     }
 

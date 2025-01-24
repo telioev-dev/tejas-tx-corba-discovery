@@ -1,5 +1,6 @@
 package com.teliolabs.corba.runners;
 
+import com.teliolabs.corba.application.types.JobState;
 import com.teliolabs.corba.data.service.DataManagerFactory;
 import com.teliolabs.corba.data.service.DataManagerService;
 import lombok.extern.log4j.Log4j2;
@@ -19,6 +20,7 @@ public class DeltaApplicationRunner implements ApplicationRunner {
     @Override
     public void run(Map<String, String> args) {
         log.info("DeltaApplicationRunner starts.");
+        updateJobState(JobState.RUNNING);
         dataManagerService.startDeltaDiscovery();
     }
 }
