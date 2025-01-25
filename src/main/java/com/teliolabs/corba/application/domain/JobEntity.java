@@ -12,6 +12,7 @@ import java.sql.Timestamp;
 @SuperBuilder(toBuilder = true)
 public abstract class JobEntity {
     protected Long jobId;
+    protected String duration;
     protected String vendor;
     protected String circle;
     private String runningUser;

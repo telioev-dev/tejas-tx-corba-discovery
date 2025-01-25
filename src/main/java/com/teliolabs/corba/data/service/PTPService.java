@@ -2,6 +2,7 @@ package com.teliolabs.corba.data.service;
 
 import com.teliolabs.corba.TxCorbaDiscoveryApplication;
 import com.teliolabs.corba.application.ExecutionContext;
+import com.teliolabs.corba.application.types.DiscoveryItemType;
 import com.teliolabs.corba.application.types.ExecutionMode;
 import com.teliolabs.corba.data.dto.ManagedElement;
 import com.teliolabs.corba.data.dto.PTP;
@@ -11,6 +12,7 @@ import com.teliolabs.corba.data.mapper.PTPCorbaMapper;
 import com.teliolabs.corba.data.mapper.PTPResultSetMapper;
 import com.teliolabs.corba.data.repository.ManagedElementRepository;
 import com.teliolabs.corba.data.repository.PTPRepository;
+import com.teliolabs.corba.discovery.DiscoveryService;
 import com.teliolabs.corba.transport.CorbaConnection;
 import com.teliolabs.corba.utils.CollectionUtils;
 import com.teliolabs.corba.utils.CorbaConstants;
@@ -30,7 +32,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 @Log4j2
-public class PTPService {
+public class PTPService implements DiscoveryService {
 
     private static PTPService instance;
     private final PTPRepository ptpRepository;
@@ -43,7 +45,9 @@ public class PTPService {
     private short[] tpLayerRateList = new short[0];
     private short[] connectionLayerRateList = new short[0];
     private NameAndStringValue_T[] neNameArray;
-    private Integer discoveredTerminationPointCount = 0;
+    private Integer discoveryCount = 0;
+    private long start;
+    private long end;
 
     // Public method to get the singleton instance
     public static PTPService getInstance(PTPRepository ptpRepository) {
@@ -95,7 +99,7 @@ public class PTPService {
     }
 
 
-    public void runDeltaProcess(CorbaConnection corbaConnection) {
+    public void runDeltaProcess(CorbaConnection corbaConnection) throws SQLException, ProcessingFailureException {
         discoverTerminationPoints(corbaConnection);
         //discoverTerminationPointsSync(corbaConnection, ExecutionMode.DELTA);
         if (terminationPoints == null || terminationPoints.isEmpty()) {
@@ -138,34 +142,40 @@ public class PTPService {
         }
     }
 
-    public void discoverTerminationPoints(CorbaConnection corbaConnection) {
+    public void discoverTerminationPoints(CorbaConnection corbaConnection) throws ProcessingFailureException, SQLException {
         meManager = corbaConnection.getMeManager();
         Map<String, ManagedElement> managedElements = ManagedElementHolder.getInstance().getElements();
         ExecutionMode executionMode = ExecutionContext.getInstance().getExecutionMode();
         if (managedElements != null && !managedElements.isEmpty()) {
+            start = System.currentTimeMillis();
             Set<String> meNamesSet = managedElements.keySet();
             int i = 0;
-            for (String meName : meNamesSet) {
-                if (ExecutionMode.DELTA == executionMode && meName.contains("UME"))
-                    continue; // IGNORE UMEs for PTP
+            try {
+                for (String meName : meNamesSet) {
+                    if (ExecutionMode.DELTA == executionMode && meName.contains("UME"))
+                        continue; // IGNORE UMEs for PTP
 
-                log.info("#{} ME '{}' for PTP processing.", i++, meName);
-                try {
+                    log.info("#{} ME '{}' for PTP processing.", i++, meName);
                     processManagedElementStack(meName);
-                } catch (ProcessingFailureException e) {
-                    log.error("Error occurred during network calls for PTPs");
-                    e.printStackTrace();
-                } catch (Exception e) {
-                    log.error("Error occurred during network calls for PTPs");
-                    e.printStackTrace();
                 }
+                end = System.currentTimeMillis();
+                printDiscoveryResult(end - start);
+                updateJobStatus();
+            } catch (ProcessingFailureException e) {
+                log.error("Error occurred during network calls for PTPs");
+                e.printStackTrace();
+                throw e;
+            } catch (Exception e) {
+                log.error("Error occurred during network calls for PTPs");
+                e.printStackTrace();
+                throw e;
             }
         } else {
             log.error("PTP discovery can't run as no MEs found in the DB");
             return;
         }
 
-        log.debug("Total PTPs fetched from NMS: {}", discoveredTerminationPointCount);
+        log.debug("Total PTPs fetched from NMS: {}", discoveryCount);
 
         // TODO: Remove this later after testing.. no longer need after we switched to save then and there
 //        if (terminationPoints != null && !terminationPoints.isEmpty() && ExecutionMode.IMPORT == executionMode) {
@@ -261,8 +271,8 @@ public class PTPService {
                     terminationPointIteratorHolder.value.destroy();
                 }
             }
-            discoveredTerminationPointCount = discoveredTerminationPointCount + terminationPoints.size();
-            log.info("Total Termination Points discovered so far: {}", discoveredTerminationPointCount);
+            discoveryCount = discoveryCount + terminationPoints.size();
+            log.info("Total Termination Points discovered so far: {}", discoveryCount);
         }
         saveTerminationPoints(terminationPoints);
     }
@@ -362,6 +372,36 @@ public class PTPService {
         log.debug("Saving PTPs in memory: {}", (ptpList != null && !ptpList.isEmpty()));
         PTPHolder.getInstance().setElements(PTPCorbaMapper.getInstance().toMap(ptpList));
         ptpList = null;
+    }
+
+    @Override
+    public int discover(CorbaConnection corbaConnection) {
+        return 0;
+    }
+
+    @Override
+    public int discoverDelta(CorbaConnection corbaConnection) {
+        return 0;
+    }
+
+    @Override
+    public int getDiscoveryCount() {
+        return discoveryCount;
+    }
+
+    @Override
+    public long getStartDiscoveryTimestampInMillis() {
+        return start;
+    }
+
+    @Override
+    public long getEndDiscoveryTimestampInMillis() {
+        return end;
+    }
+
+    @Override
+    public DiscoveryItemType getDiscoveryItemType() {
+        return DiscoveryItemType.PTP;
     }
 }
 

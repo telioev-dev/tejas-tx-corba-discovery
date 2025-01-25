@@ -19,7 +19,7 @@ CREATE TABLE ECI_TOPOLOGY_TN
     z_end_port_label   VARCHAR2(100),
     user_label         VARCHAR2(400),
     protection         VARCHAR2(50),
-    ring_name          VARCHAR2(100),
+    ring_name          VARCHAR2(300),
     inconsistent       VARCHAR2(50),
     technology_layer   VARCHAR2(50),
     circle             VARCHAR2(50) DEFAULT 'TN',

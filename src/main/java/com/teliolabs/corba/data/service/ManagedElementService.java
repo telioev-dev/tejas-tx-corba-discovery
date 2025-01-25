@@ -2,10 +2,7 @@ package com.teliolabs.corba.data.service;
 
 
 import com.teliolabs.corba.application.ExecutionContext;
-import com.teliolabs.corba.application.ExecutionContextAware;
-import com.teliolabs.corba.application.domain.DeltaJobEntity;
-import com.teliolabs.corba.application.domain.ImportJobEntity;
-import com.teliolabs.corba.application.domain.JobEntity;
+import com.teliolabs.corba.application.types.DiscoveryItemType;
 import com.teliolabs.corba.application.types.ExecutionMode;
 import com.teliolabs.corba.data.domain.ManagedElementEntity;
 import com.teliolabs.corba.data.dto.ManagedElement;
@@ -13,6 +10,7 @@ import com.teliolabs.corba.data.holder.ManagedElementHolder;
 import com.teliolabs.corba.data.mapper.ManagedElementCorbaMapper;
 import com.teliolabs.corba.data.mapper.ManagedElementResultSetMapper;
 import com.teliolabs.corba.data.repository.ManagedElementRepository;
+import com.teliolabs.corba.discovery.DiscoveryService;
 import com.teliolabs.corba.transport.CorbaConnection;
 import com.teliolabs.corba.utils.CollectionUtils;
 import com.teliolabs.corba.utils.ManagedElementUtils;
@@ -34,12 +32,14 @@ import java.util.stream.Collectors;
 
 @Log4j2
 @RequiredArgsConstructor
-public class ManagedElementService implements ExecutionContextAware {
+public class ManagedElementService implements DiscoveryService {
 
     private static ManagedElementService instance;
     private final ManagedElementRepository managedElementRepository;
     private Integer discoveryCount;
     private boolean insertedInDb;
+    private long start;
+    private long end;
 
     // Public method to get the singleton instance
     public static ManagedElementService getInstance(ManagedElementRepository managedElementRepository) {
@@ -129,7 +129,7 @@ public class ManagedElementService implements ExecutionContextAware {
         ManagedElementIterator_IHolder managedElementIteratorIHolder = new ManagedElementIterator_IHolder();
         int howMuch = ExecutionContext.getInstance().getCircle().getMeHowMuch();
         try {
-            long start = System.currentTimeMillis();
+            start = System.currentTimeMillis();
             meManager.getAllManagedElements(howMuch, managedElementListTHolder, managedElementIteratorIHolder);
             Collections.addAll(managedElements, managedElementListTHolder.value);
             boolean exitWhile = false;
@@ -146,9 +146,10 @@ public class ManagedElementService implements ExecutionContextAware {
                         managedElementIteratorIHolder.value.destroy();
                     }
                 }
-            long end = System.currentTimeMillis();
+            end = System.currentTimeMillis();
             discoveryCount = managedElements.size();
-            log.info("Network discovery for total MEs {} took {} seconds.", discoveryCount, (end - start) / 1000);
+            //log.info("Network discovery for total MEs {} took {} seconds.", discoveryCount, (end - start) / 1000);
+            printDiscoveryResult(end - start);
             updateJobStatus();
         } catch (ProcessingFailureException e) {
             throw new RuntimeException(e);
@@ -180,13 +181,33 @@ public class ManagedElementService implements ExecutionContextAware {
         managedElementList = null;
     }
 
-    private void updateJobStatus() {
-        JobEntity runningJob = getCurrentJob();
-        if (isExecutionModeImport()) {
-            ImportJobEntity importJobEntity = (ImportJobEntity) runningJob;
-            importJobEntity.setDiscoveryCount(discoveryCount);
-        } else if (isExecutionModeDelta()) {
-            DeltaJobEntity deltaJobEntity = (DeltaJobEntity) runningJob;
-        }
+    @Override
+    public int discover(CorbaConnection corbaConnection) {
+        return 0;
+    }
+
+    @Override
+    public int discoverDelta(CorbaConnection corbaConnection) {
+        return 0;
+    }
+
+    @Override
+    public int getDiscoveryCount() {
+        return discoveryCount;
+    }
+
+    @Override
+    public long getStartDiscoveryTimestampInMillis() {
+        return start;
+    }
+
+    @Override
+    public long getEndDiscoveryTimestampInMillis() {
+        return end;
+    }
+
+    @Override
+    public DiscoveryItemType getDiscoveryItemType() {
+        return DiscoveryItemType.ME;
     }
 }

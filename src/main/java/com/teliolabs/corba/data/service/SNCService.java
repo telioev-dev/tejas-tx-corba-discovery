@@ -1,6 +1,7 @@
 package com.teliolabs.corba.data.service;
 
 import com.teliolabs.corba.application.ExecutionContext;
+import com.teliolabs.corba.application.types.DiscoveryItemType;
 import com.teliolabs.corba.application.types.ExecutionMode;
 import com.teliolabs.corba.data.dto.PTP;
 import com.teliolabs.corba.data.dto.SNC;
@@ -11,6 +12,7 @@ import com.teliolabs.corba.data.mapper.SNCCorbaMapper;
 import com.teliolabs.corba.data.mapper.SNCResultSetMapper;
 import com.teliolabs.corba.data.mapper.TopologyCorbaMapper;
 import com.teliolabs.corba.data.repository.SNCRepository;
+import com.teliolabs.corba.discovery.DiscoveryService;
 import com.teliolabs.corba.transport.CorbaConnection;
 import com.teliolabs.corba.transport.CorbaSession;
 import com.teliolabs.corba.utils.*;
@@ -38,7 +40,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Log4j2
-public class SNCService {
+public class SNCService implements DiscoveryService {
 
     private static SNCService instance;
     private final SNCRepository sncRepository;
@@ -48,6 +50,8 @@ public class SNCService {
     private List<SubnetworkConnection_T> subnetworkConnectionTList = new ArrayList<>();
     private List<SNC> sncs = new ArrayList<>();
     private Integer discoveryCount = 0;
+    private long start;
+    private long end;
 
 
     // Public method to get the singleton instance
@@ -100,7 +104,7 @@ public class SNCService {
                 logSubnetworkDetails(subnetwork);
                 processSubnetwork(subnetwork, corbaConnection);
             }
-
+            updateJobStatus();
             if (subnetworkConnectionTList != null && !subnetworkConnectionTList.isEmpty() && executionMode == ExecutionMode.IMPORT) {
                 log.info("Total SNCs on all Subnetworks discovered from NMS: {}", subnetworkConnectionTList.size());
                 saveSubnetworkConnections();
@@ -118,7 +122,7 @@ public class SNCService {
         SNCIterator_IHolder sncIteratorIHolder = new SNCIterator_IHolder();
         short[] rateList = new short[0];
         try {
-            long start = System.currentTimeMillis();
+            start = System.currentTimeMillis();
             corbaConnection.getMlsnManager().getAllSubnetworkConnections(ExecutionMode.DELTA == ExecutionContext.getInstance().getExecutionMode() ?
                     buildDeltaSearchCriteria(subnetwork) : subnetwork.name, rateList, HOW_MANY, subnetworkConnectionListTHolder, sncIteratorIHolder);
             //Collections.addAll(subnetworkConnectionTList, sncList.value);
@@ -128,8 +132,9 @@ public class SNCService {
             discoveryCount = discoveryCount + subnetworkConnectionTs.length;
             subnetworkConnectionTs = null;
             processSubnetworkConnections(subnetworkConnectionListTHolder, sncIteratorIHolder);
-            long end = System.currentTimeMillis();
-            log.info("Network discovery on Subnetwork {} for total SNCs {} took {} seconds.", SNCUtils.getMultilayerSubnetworkName(subnetwork), discoveryCount, (end - start) / 1000);
+            end = System.currentTimeMillis();
+            printDiscoveryResult(end - start);
+            //log.info("Network discovery on Subnetwork {} for total SNCs {} took {} seconds.", SNCUtils.getMultilayerSubnetworkName(subnetwork), discoveryCount, (end - start) / 1000);
         } catch (Exception e) {
             log.error("Failed to process subnetwork: {}", Arrays.toString(subnetwork.name), e);
             throw e;
@@ -276,5 +281,35 @@ public class SNCService {
         long end = System.currentTimeMillis();
         log.info("Discovered SNCs # {} inserted in {} seconds.", subnetworkConnections.length, (end - start) / 1000);
         subnetworkConnections = null;
+    }
+
+    @Override
+    public int discover(CorbaConnection corbaConnection) {
+        return 0;
+    }
+
+    @Override
+    public int discoverDelta(CorbaConnection corbaConnection) {
+        return 0;
+    }
+
+    @Override
+    public int getDiscoveryCount() {
+        return discoveryCount;
+    }
+
+    @Override
+    public long getStartDiscoveryTimestampInMillis() {
+        return start;
+    }
+
+    @Override
+    public long getEndDiscoveryTimestampInMillis() {
+        return end;
+    }
+
+    @Override
+    public DiscoveryItemType getDiscoveryItemType() {
+        return DiscoveryItemType.SNC;
     }
 }

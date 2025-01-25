@@ -106,6 +106,8 @@ public class JobRepository {
         if (job.getDiscoveryCount() != null) fieldsToUpdate.put("discovery_item_count", job.getDiscoveryCount());
         if (job.getEndTimestamp() != null) fieldsToUpdate.put("end_timestamp", job.getEndTimestamp());
         if (job.getErrorMessage() != null) fieldsToUpdate.put("error_details", job.getErrorMessage());
+        if (job.getDuration() != null) fieldsToUpdate.put("duration", job.getDuration());
+        if (job.getEntity() != null) fieldsToUpdate.put("discovery_item", job.getEntity().name());
 
 
         // Build dynamic SQL query
@@ -143,12 +145,12 @@ public class JobRepository {
 
     public void updateImportJobStatus(ImportJobEntity importJobEntity) {
         String sql = "UPDATE IMPORT_JOB SET JOB_STATE = ? WHERE job_id = ?";
-        executeUpdate(sql, importJobEntity.getJobState(), importJobEntity.getJobId());
+        executeUpdate(sql, importJobEntity.getJobState().name(), importJobEntity.getJobId());
     }
 
     public void updateDeltaJobStatus(DeltaJobEntity deltaJobEntity) {
         String sql = "UPDATE DELTA_JOB SET JOB_STATE = ? WHERE job_id = ?";
-        executeUpdate(sql, deltaJobEntity.getJobState(), deltaJobEntity.getJobId());
+        executeUpdate(sql, deltaJobEntity.getJobState().name(), deltaJobEntity.getJobId());
     }
 
     private void executeUpdate(String sql, Object... params) {

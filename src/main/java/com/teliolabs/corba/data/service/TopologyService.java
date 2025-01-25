@@ -1,9 +1,11 @@
 package com.teliolabs.corba.data.service;
 
 import com.teliolabs.corba.application.ExecutionContext;
+import com.teliolabs.corba.application.types.DiscoveryItemType;
 import com.teliolabs.corba.application.types.ExecutionMode;
 import com.teliolabs.corba.data.mapper.TopologyCorbaMapper;
 import com.teliolabs.corba.data.repository.TopologyRepository;
+import com.teliolabs.corba.discovery.DiscoveryService;
 import com.teliolabs.corba.transport.CorbaConnection;
 import com.teliolabs.corba.transport.CorbaSession;
 import com.teliolabs.corba.utils.CorbaConstants;
@@ -33,11 +35,13 @@ import java.util.stream.Collectors;
 
 @Log4j2
 @RequiredArgsConstructor
-public class TopologyService {
+public class TopologyService implements DiscoveryService {
 
     private static TopologyService instance;
     private final TopologyRepository topologyRepository;
     private Integer discoveryCount = 0;
+    private long start;
+    private long end;
 
     // Public method to get the singleton instance
     public static TopologyService getInstance(TopologyRepository topologyRepository) {
@@ -138,7 +142,7 @@ public class TopologyService {
                 logSubnetworkDetails(subnetwork);
                 processSubnetwork(subnetwork, corbaConnection);
             }
-
+            updateJobStatus();
             if (topologicalLinkTList != null && !topologicalLinkTList.isEmpty() && executionMode == ExecutionMode.IMPORT) {
                 saveTopologies();
             }
@@ -169,13 +173,13 @@ public class TopologyService {
         return subnetworks;
     }
 
-    private void processSubnetwork(MultiLayerSubnetwork_T subnetwork, CorbaConnection corbaConnection) {
+    private void processSubnetwork(MultiLayerSubnetwork_T subnetwork, CorbaConnection corbaConnection) throws SQLException, ProcessingFailureException {
         try {
             TopologicalLinkList_THolder linkListHolder = new TopologicalLinkList_THolder();
             TopologicalLinkIterator_IHolder iteratorHolder = new TopologicalLinkIterator_IHolder();
 
             int batchSize = ExecutionContext.getInstance().getCircle().getTopologyHowMuch();
-            long start = System.currentTimeMillis();
+            start = System.currentTimeMillis();
             corbaConnection.getMlsnManager().getAllTopologicalLinks(ExecutionMode.DELTA == ExecutionContext.getInstance().getExecutionMode() ?
                     buildDeltaSearchCriteria(subnetwork) : subnetwork.name, batchSize, linkListHolder, iteratorHolder);
             TopologicalLink_T[] topologicalLinkTs = linkListHolder.value;
@@ -184,10 +188,12 @@ public class TopologyService {
             topologicalLinkTs = null;
             //Collections.addAll(topologicalLinkTList, linkListHolder.value);
             processTopologicalLinks(linkListHolder, iteratorHolder);
-            long end = System.currentTimeMillis();
-            log.info("Network discovery for total Topologies {} took {} seconds.", topologicalLinkTList.size(), (end - start) / 1000);
+            end = System.currentTimeMillis();
+            printDiscoveryResult(end - start);
+            //log.info("Network discovery for total Topologies {} took {} seconds.", topologicalLinkTList.size(), (end - start) / 1000);
         } catch (Exception e) {
             log.error("Failed to process subnetwork: {}", Arrays.toString(subnetwork.name), e);
+            throw e;
         }
     }
 
@@ -250,6 +256,36 @@ public class TopologyService {
                 log.debug("Topology aEndTP - Name: {}, Value: {}", attr.name, attr.value));
         Arrays.stream(subnetwork.zEndTP).forEach(attr ->
                 log.debug("Topology zEndTP - Name: {}, Value: {}", attr.name, attr.value));
+    }
+
+    @Override
+    public int discover(CorbaConnection corbaConnection) {
+        return 0;
+    }
+
+    @Override
+    public int discoverDelta(CorbaConnection corbaConnection) {
+        return 0;
+    }
+
+    @Override
+    public int getDiscoveryCount() {
+        return discoveryCount;
+    }
+
+    @Override
+    public long getStartDiscoveryTimestampInMillis() {
+        return start;
+    }
+
+    @Override
+    public long getEndDiscoveryTimestampInMillis() {
+        return end;
+    }
+
+    @Override
+    public DiscoveryItemType getDiscoveryItemType() {
+        return DiscoveryItemType.TOPOLOGY;
     }
 }
 

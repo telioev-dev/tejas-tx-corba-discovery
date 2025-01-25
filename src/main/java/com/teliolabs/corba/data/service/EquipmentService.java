@@ -3,6 +3,7 @@ package com.teliolabs.corba.data.service;
 import com.teliolabs.corba.TxCorbaDiscoveryApplication;
 import com.teliolabs.corba.application.ExecutionContext;
 import com.teliolabs.corba.application.ExecutionContextAware;
+import com.teliolabs.corba.application.types.DiscoveryItemType;
 import com.teliolabs.corba.application.types.ExecutionMode;
 import com.teliolabs.corba.data.domain.EquipmentEntity;
 import com.teliolabs.corba.data.dto.ManagedElement;
@@ -10,6 +11,7 @@ import com.teliolabs.corba.data.holder.EquipmentHolder;
 import com.teliolabs.corba.data.holder.ManagedElementHolder;
 import com.teliolabs.corba.data.mapper.EquipmentCorbaMapper;
 import com.teliolabs.corba.data.repository.EquipmentRepository;
+import com.teliolabs.corba.discovery.DiscoveryService;
 import com.teliolabs.corba.transport.CorbaConnection;
 import com.teliolabs.corba.utils.CorbaConstants;
 import lombok.extern.log4j.Log4j2;
@@ -25,14 +27,16 @@ import java.sql.SQLException;
 import java.util.*;
 
 @Log4j2
-public class EquipmentService implements ExecutionContextAware {
+public class EquipmentService implements DiscoveryService {
 
     private static EquipmentService instance;
     private final EquipmentRepository equipmentRepository;
     private NameAndStringValue_T[] neNameArray;
     private EquipmentInventoryMgr_I eiManager;
     private List<EquipmentOrHolder_T> equipmentOrHolderTList = new ArrayList<>();
-    private Integer discoveredEquipmentCount = 0;
+    private Integer discoveryCount = 0;
+    private long start;
+    private long end;
 
 
     // Public method to get the singleton instance
@@ -71,30 +75,35 @@ public class EquipmentService implements ExecutionContextAware {
     public void discoverEquipments() throws ProcessingFailureException, SQLException {
         Map<String, ManagedElement> managedElements = ManagedElementHolder.getInstance().getElements();
         if (managedElements != null && !managedElements.isEmpty()) {
+            start = System.currentTimeMillis();
             Set<String> meNamesSet = managedElements.keySet();
             int i = 0;
-            for (String meName : meNamesSet) {
-                if (meName.contains("UME")) continue; // IGNORE UMEs for Equipment
+            try {
+                for (String meName : meNamesSet) {
+                    if (meName.contains("UME")) continue; // IGNORE UMEs for Equipment
 
-                log.info("#{} ME '{}' for Equipment processing.", i++, meName);
-                try {
+                    log.info("#{} ME '{}' for Equipment processing.", i++, meName);
                     processManagedElement(meName);
-                } catch (ProcessingFailureException e) {
-                    log.error("Error occurred during network calls for Equipments");
-                    log.error("Error reason: " + e.errorReason);
-                    log.error("Error type: " + e.exceptionType.value());
-                    throw e;
-                } catch (Exception e) {
-                    log.error("Error occurred during network calls for Equipments");
-                    throw e;
                 }
+                end = System.currentTimeMillis();
+                printDiscoveryResult(end - start);
+                updateJobStatus();
+            } catch (ProcessingFailureException e) {
+                log.error("Error occurred during network calls for Equipments");
+                log.error("Error reason: " + e.errorReason);
+                log.error("Error type: " + e.exceptionType.value());
+                throw e;
+            } catch (Exception e) {
+                log.error("Error occurred during network calls for Equipments");
+                throw e;
             }
+
         } else {
             log.error("Equipment discovery can't run as no MEs found in the DB");
             return;
         }
 
-        log.debug("Total Equipments fetched from NMS: {}", discoveredEquipmentCount);
+        log.debug("Total Equipments fetched from NMS: {}", discoveryCount);
 
         // TODO: Remove this later after testing.. no longer need after we switched to save then and there
 //        if (equipmentOrHolderTList != null && !equipmentOrHolderTList.isEmpty() && ExecutionMode.IMPORT == getExecutionMode()) {
@@ -154,10 +163,9 @@ public class EquipmentService implements ExecutionContextAware {
                     equipOrHolderItr.value.destroy();
                 }
             }
-
         }
-        discoveredEquipmentCount = discoveredEquipmentCount + equipmentOrHolderTList.size();
-        log.info("getAllEquipment: total EQs discovered so far {}.", discoveredEquipmentCount);
+        discoveryCount = discoveryCount + equipmentOrHolderTList.size();
+        log.info("getAllEquipment: total EQs discovered so far {}.", discoveryCount);
         saveEquipments(equipmentOrHolderTList);
     }
 
@@ -183,4 +191,33 @@ public class EquipmentService implements ExecutionContextAware {
         }
     }
 
+    @Override
+    public int discover(CorbaConnection corbaConnection) {
+        return 0;
+    }
+
+    @Override
+    public int discoverDelta(CorbaConnection corbaConnection) {
+        return 0;
+    }
+
+    @Override
+    public int getDiscoveryCount() {
+        return discoveryCount;
+    }
+
+    @Override
+    public long getStartDiscoveryTimestampInMillis() {
+        return start;
+    }
+
+    @Override
+    public long getEndDiscoveryTimestampInMillis() {
+        return end;
+    }
+
+    @Override
+    public DiscoveryItemType getDiscoveryItemType() {
+        return DiscoveryItemType.EQUIPMENT;
+    }
 }
