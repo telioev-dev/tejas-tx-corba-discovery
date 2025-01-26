@@ -7,6 +7,7 @@ import com.teliolabs.corba.data.dto.ManagedElement;
 import com.teliolabs.corba.utils.ManagedElementUtils;
 import org.tmforum.mtnm.managedElement.ManagedElement_T;
 
+import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -28,6 +29,7 @@ public class RouteCorbaMapper implements CorbaMapper<ManagedElement_T, ManagedEl
 
     @Override
     public ManagedElement mapFromCorba(ManagedElement_T input) {
+        ZonedDateTime executionTimestamp = ExecutionContext.getInstance().getExecutionTimestamp();
         String meName = ManagedElementUtils.getMEName(input.name);
         return ManagedElement.builder().
                 meName(meName).
@@ -38,7 +40,7 @@ public class RouteCorbaMapper implements CorbaMapper<ManagedElement_T, ManagedEl
                 location(input.location != null ? input.location.trim() : null).
                 userLabel(input.userLabel != null ? input.userLabel.trim() : null).
                 softwareVersion(input.version != null ? input.version.trim() : null).
-                lastModifiedDate(TxCorbaDiscoveryApplication.NOW).build();
+                lastModifiedDate(executionTimestamp).build();
     }
 
     @Override

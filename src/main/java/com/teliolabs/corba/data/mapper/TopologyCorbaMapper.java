@@ -13,6 +13,7 @@ import com.teliolabs.corba.utils.TopologyUtils;
 import lombok.extern.log4j.Log4j2;
 import org.tmforum.mtnm.topologicalLink.TopologicalLink_T;
 
+import java.time.ZonedDateTime;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -37,10 +38,7 @@ public class TopologyCorbaMapper implements CorbaMapper<TopologicalLink_T, Topol
 
     @Override
     public Topology mapFromCorba(TopologicalLink_T input) {
-
-        log.debug("managedElementMap empty {}", (managedElementMap == null));
-        log.debug("ptpMap empty {}", (ptpMap == null));
-
+        ZonedDateTime executionTimestamp = ExecutionContext.getInstance().getExecutionTimestamp();
         String aEndMeName = ManagedElementUtils.getMEName(input.aEndTP);
         String zEndMeName = ManagedElementUtils.getMEName(input.zEndTP);
         String aEndPtpId = PTPUtils.getPTPName(input.aEndTP);
@@ -51,10 +49,6 @@ public class TopologyCorbaMapper implements CorbaMapper<TopologicalLink_T, Topol
 
         PTP aEndPtp = ptpMap.get(aEndMeName + "_" + aEndPtpId);
         PTP zEndPtp = ptpMap.get(zEndMeName + "_" + zEndPtpId);
-
-        log.debug("aEndManagedElement: {}, zEndManagedElement: {}, aEndPtp: {}, zEndPtp: {}",
-                aEndManagedElement == null, zEndManagedElement == null, aEndPtp == null, zEndPtp == null);
-
 
         return Topology.builder().circle(ExecutionContext.getInstance().getCircle().getName()).
                 nativeEmsName(input.nativeEMSName).
@@ -76,7 +70,7 @@ public class TopologyCorbaMapper implements CorbaMapper<TopologicalLink_T, Topol
                 zEndEms(PTPUtils.getEMSName(input.zEndTP)).
                 zEndPortLabel(zEndPtp != null ? zEndPtp.getPortNativeName() : null).userLabel(input.userLabel).
                 zEndPortName(zEndPtpId).
-                lastModifiedDate(TxCorbaDiscoveryApplication.NOW).build();
+                lastModifiedDate(executionTimestamp).build();
     }
 
     @Override

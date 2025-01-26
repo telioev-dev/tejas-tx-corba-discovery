@@ -4,7 +4,7 @@ package com.teliolabs.corba.data.service;
 import com.teliolabs.corba.application.ExecutionContext;
 import com.teliolabs.corba.application.types.DiscoverySource;
 import com.teliolabs.corba.application.types.ExecutionMode;
-import com.teliolabs.corba.data.repository.EquipmentRepository;
+import com.teliolabs.corba.data.repository.*;
 import com.teliolabs.corba.transport.CorbaConnection;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -17,18 +17,12 @@ public class DataManagerService {
 
     private static DataManagerService instance;
 
-    private final ManagedElementService managedElementService;
-    private final TopologyService topologyService;
-    private final PTPService ptpService;
-    private final SNCService sncService;
-
     // Public method to get the singleton instance
-    public static DataManagerService getInstance(ManagedElementService managedElementService,
-                                                 TopologyService topologyService, PTPService ptpService, SNCService sncService) {
+    public static DataManagerService getInstance() {
         if (instance == null) {
             synchronized (DataManagerService.class) {
                 if (instance == null) {
-                    instance = new DataManagerService(managedElementService, topologyService, ptpService, sncService);
+                    instance = new DataManagerService();
                     log.debug("DataManagerService instance created.");
                 }
             }
@@ -36,7 +30,7 @@ public class DataManagerService {
         return instance;
     }
 
-    public void startFullDiscovery() {
+    public void startFullDiscovery() throws Exception {
         long start = System.nanoTime();
 
 
@@ -66,6 +60,8 @@ public class DataManagerService {
 
     public void discoverTopologies(DiscoverySource discoverySource, ExecutionMode executionMode) {
         log.info("Starting discovery of topologies with execution mode: {}", executionMode);
+        TopologyRepository topologyRepository = TopologyRepository.getInstance();
+        TopologyService topologyService = TopologyService.getInstance(topologyRepository);
         if (discoverySource == DiscoverySource.DB) {
 
         } else {
@@ -82,7 +78,109 @@ public class DataManagerService {
 
             } catch (Exception e) {
                 log.error("Error during fetchTopologicalLinks process: {}", ExecutionContext.getInstance().getCircle().getName(), e);
+                throw e;
             }
+        }
+
+    }
+
+    public void discoverSubnetworkConnections(DiscoverySource discoverySource, ExecutionMode executionMode) throws Exception {
+        log.info("Starting discovery of SNCs with execution mode: {}", executionMode);
+        SNCRepository sncRepository = SNCRepository.getInstance();
+        SNCService sncService = SNCService.getInstance(sncRepository);
+        if (discoverySource == DiscoverySource.NMS) {
+            try (CorbaConnection corbaConnection = establishConnection()) {
+                if (corbaConnection == null) return;
+
+                if (executionMode == ExecutionMode.IMPORT) {
+                    sncService.discoverSubnetworkConnections(corbaConnection, executionMode);
+                } else if (executionMode == ExecutionMode.DELTA) {
+                    sncService.runDeltaProcess(corbaConnection);
+                } else {
+                    log.warn("Unsupported execution mode: {}", executionMode.name());
+                }
+
+            } catch (Exception e) {
+                log.error("Error during discoverSubnetworkConnections process: {}", ExecutionContext.getInstance().getCircle().getName(), e);
+                throw e;
+            }
+        } else {
+            sncService.loadAll();
+        }
+
+    }
+
+    public void discoverTerminationPoints(DiscoverySource discoverySource, ExecutionMode executionMode) {
+        PTPRepository ptpRepository = PTPRepository.getInstance();
+        PTPService ptpService = PTPService.getInstance(ptpRepository);
+        if (discoverySource == DiscoverySource.DB) {
+            ptpService.loadAll();
+        } else {
+            try (CorbaConnection corbaConnection = establishConnection()) {
+                if (corbaConnection == null) return;
+
+
+                if (executionMode == ExecutionMode.IMPORT) {
+                    ptpService.discoverTerminationPoints(corbaConnection);
+                } else if (executionMode == ExecutionMode.DELTA) {
+                    ptpService.runDeltaProcess(corbaConnection);
+                } else {
+                    log.warn("Unsupported execution mode: {}", executionMode.name());
+                }
+            } catch (Exception e) {
+                log.error("Error during discoverTerminationPoints process: {}", ExecutionContext.getInstance().getCircle().getName(), e);
+
+            }
+        }
+
+    }
+
+    public void startDeltaDiscovery() throws Exception {
+        long startManagedElements = System.nanoTime();
+        discoverManagedElements(DiscoverySource.NMS, ExecutionMode.DELTA);
+        long durationManagedElements = System.nanoTime() - startManagedElements;
+        log.info("discoverManagedElements DELTA took: {} minutes", durationManagedElements / 1_000_000_000.0 / 60);
+
+        long startTerminationPoints = System.nanoTime();
+        discoverTerminationPoints(DiscoverySource.NMS, ExecutionMode.DELTA);
+        long durationTerminationPoints = System.nanoTime() - startTerminationPoints;
+        log.info("discoverTerminationPoints DELTA took: {} minutes", durationTerminationPoints / 1_000_000_000.0 / 60);
+
+        long startTopologies = System.nanoTime();
+        discoverTopologies(DiscoverySource.NMS, ExecutionMode.DELTA);
+        long durationTopologies = System.nanoTime() - startTopologies;
+        log.info("discoverTopologies DELTA took: {} minutes", durationTopologies / 1_000_000_000.0 / 60);
+
+        long startSNCs = System.nanoTime();
+        discoverSubnetworkConnections(DiscoverySource.NMS, ExecutionMode.DELTA);
+        long durationSNCs = System.nanoTime() - startSNCs;
+        log.info("discoverSubnetworkConnections DELTA took: {} minutes", durationSNCs / 1_000_000_000.0 / 60);
+
+
+    }
+
+    public void discoverManagedElements(DiscoverySource discoverySource, ExecutionMode executionMode) throws Exception {
+        log.info("Discover MEs with DiscoverySource: {}", discoverySource);
+        ManagedElementRepository managedElementRepository = ManagedElementRepository.getInstance();
+        ManagedElementService managedElementService = ManagedElementService.getInstance(managedElementRepository);
+        if (discoverySource == DiscoverySource.NMS) {
+            try (CorbaConnection corbaConnection = establishConnection()) {
+                if (corbaConnection == null) return;
+
+                if (executionMode == ExecutionMode.IMPORT) {
+                    managedElementService.discoverManagedElements(corbaConnection, executionMode);
+                } else if (executionMode == ExecutionMode.DELTA) {
+                    managedElementService.runDeltaProcess(corbaConnection);
+                } else {
+                    log.warn("Unsupported execution mode: {}", executionMode.name());
+                }
+            } catch (Exception e) {
+                log.error("Error during discoverManagedElements process: {}", ExecutionContext.getInstance().getCircle().getName(), e);
+                throw e;
+            }
+        } else {
+            log.info("Discovery Source DB, hence trying to load all MEs from DB");
+            managedElementService.loadAll();
         }
 
     }
@@ -112,101 +210,6 @@ public class DataManagerService {
 
     }
 
-    public void discoverSubnetworkConnections(DiscoverySource discoverySource, ExecutionMode executionMode) {
-        log.info("Starting discovery of SNCs with execution mode: {}", executionMode);
-
-        if (discoverySource == DiscoverySource.NMS) {
-            try (CorbaConnection corbaConnection = establishConnection()) {
-                if (corbaConnection == null) return;
-
-                if (executionMode == ExecutionMode.IMPORT) {
-                    sncService.discoverSubnetworkConnections(corbaConnection, executionMode);
-                } else if (executionMode == ExecutionMode.DELTA) {
-                    sncService.runDeltaProcess(corbaConnection);
-                } else {
-                    log.warn("Unsupported execution mode: {}", executionMode.name());
-                }
-
-            } catch (Exception e) {
-                log.error("Error during discoverSubnetworkConnections process: {}", ExecutionContext.getInstance().getCircle().getName(), e);
-            }
-        } else {
-            sncService.loadAll();
-        }
-
-    }
-
-    public void discoverTerminationPoints(DiscoverySource discoverySource, ExecutionMode executionMode) {
-        if (discoverySource == DiscoverySource.DB) {
-            ptpService.loadAll();
-        } else {
-            try (CorbaConnection corbaConnection = establishConnection()) {
-                if (corbaConnection == null) return;
-
-
-                if (executionMode == ExecutionMode.IMPORT) {
-                    ptpService.discoverTerminationPoints(corbaConnection);
-                } else if (executionMode == ExecutionMode.DELTA) {
-                    ptpService.runDeltaProcess(corbaConnection);
-                } else {
-                    log.warn("Unsupported execution mode: {}", executionMode.name());
-                }
-            } catch (Exception e) {
-                log.error("Error during discoverTerminationPoints process: {}", ExecutionContext.getInstance().getCircle().getName(), e);
-
-            }
-        }
-
-    }
-
-    public void startDeltaDiscovery() {
-        long startManagedElements = System.nanoTime();
-        discoverManagedElements(DiscoverySource.NMS, ExecutionMode.DELTA);
-        long durationManagedElements = System.nanoTime() - startManagedElements;
-        log.info("discoverManagedElements DELTA took: {} minutes", durationManagedElements / 1_000_000_000.0 / 60);
-
-        long startTerminationPoints = System.nanoTime();
-        discoverTerminationPoints(DiscoverySource.NMS, ExecutionMode.DELTA);
-        long durationTerminationPoints = System.nanoTime() - startTerminationPoints;
-        log.info("discoverTerminationPoints DELTA took: {} minutes", durationTerminationPoints / 1_000_000_000.0 / 60);
-
-        long startTopologies = System.nanoTime();
-        discoverTopologies(DiscoverySource.NMS, ExecutionMode.DELTA);
-        long durationTopologies = System.nanoTime() - startTopologies;
-        log.info("discoverTopologies DELTA took: {} minutes", durationTopologies / 1_000_000_000.0 / 60);
-
-        long startSNCs = System.nanoTime();
-        discoverSubnetworkConnections(DiscoverySource.NMS, ExecutionMode.DELTA);
-        long durationSNCs = System.nanoTime() - startSNCs;
-        log.info("discoverSubnetworkConnections DELTA took: {} minutes", durationSNCs / 1_000_000_000.0 / 60);
-
-
-    }
-
-    public void discoverManagedElements(DiscoverySource discoverySource, ExecutionMode executionMode) {
-        log.info("Discover MEs with DiscoverySource: {}", discoverySource);
-        if (discoverySource == DiscoverySource.NMS) {
-            try (CorbaConnection corbaConnection = establishConnection()) {
-                if (corbaConnection == null) return;
-
-                if (executionMode == ExecutionMode.IMPORT) {
-                    managedElementService.discoverManagedElements(corbaConnection, executionMode);
-                } else if (executionMode == ExecutionMode.DELTA) {
-                    managedElementService.runDeltaProcess(corbaConnection);
-                } else {
-                    log.warn("Unsupported execution mode: {}", executionMode.name());
-                }
-            } catch (Exception e) {
-                log.error("Error during discoverManagedElements process: {}",
-                        ExecutionContext.getInstance().getCircle().getName(), e);
-            }
-        } else {
-            log.info("Discovery Source DB, hence trying to load all MEs from DB");
-            managedElementService.loadAll();
-        }
-
-    }
-
 
     private CorbaConnection establishConnection() {
         try {
@@ -214,8 +217,7 @@ public class DataManagerService {
         } catch (ProcessingFailureException e) {
             log.error("Error reason: " + e.errorReason);
             log.error("Error type: " + e.exceptionType.value());
-            log.error("Exception establishing connection to the NMS: {}",
-                    ExecutionContext.getInstance().getCircle().getName(), e);
+            log.error("Exception establishing connection to the NMS: {}", ExecutionContext.getInstance().getCircle().getName(), e);
             return null;
         } catch (Exception e) {
             log.error("Exception establishing connection to the NMS: {}", ExecutionContext.getInstance().getCircle().getName(), e);

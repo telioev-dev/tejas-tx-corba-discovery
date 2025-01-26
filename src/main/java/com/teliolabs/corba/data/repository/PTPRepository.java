@@ -100,8 +100,6 @@ public class PTPRepository {
                 if (batchCounter > 0) {
                     totalInserted += executeBatch(ps, connection);
                 }
-
-                log.info("Total PTPs inserted: {}", totalInserted);
             } catch (SQLException e) {
                 connection.rollback();
                 log.error("Error inserting PTPs. Transaction rolled back.", e);

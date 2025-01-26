@@ -192,8 +192,6 @@ public class TopologyRepository {
                 if (batchCounter > 0) {
                     totalInserted += executeBatch(ps, connection);
                 }
-
-                log.info("Total topologies inserted: {}", totalInserted);
             } catch (SQLException e) {
                 connection.rollback();
                 log.error("Error inserting topologies. Transaction rolled back.", e);

@@ -186,11 +186,9 @@ public class TopologyService implements DiscoveryService {
             saveTopologies(topologicalLinkTs);
             discoveryCount = discoveryCount + topologicalLinkTs.length;
             topologicalLinkTs = null;
-            //Collections.addAll(topologicalLinkTList, linkListHolder.value);
             processTopologicalLinks(linkListHolder, iteratorHolder);
             end = System.currentTimeMillis();
             printDiscoveryResult(end - start);
-            //log.info("Network discovery for total Topologies {} took {} seconds.", topologicalLinkTList.size(), (end - start) / 1000);
         } catch (Exception e) {
             log.error("Failed to process subnetwork: {}", Arrays.toString(subnetwork.name), e);
             throw e;
@@ -209,15 +207,16 @@ public class TopologyService implements DiscoveryService {
                     TopologicalLink_T[] topologicalLinkTs = linkListHolder.value;
                     saveTopologies(topologicalLinkTs);
                     topologicalLinkTs = null;
-                    //Collections.addAll(topologicalLinkTList, linkListHolder.value);
-                    log.info("Topologies discovered so far: {}", discoveryCount);
+                    linkListHolder.value = null;
+                    if (discoveryCount % 1000 == 0) {
+                        log.info("Topologies discovered so far: {}", discoveryCount);
+                    }
                 }
             } catch (Exception e) {
                 log.error("Error fetching topological links: {}", e.getMessage(), e);
                 throw e;
             }
         }
-
     }
 
     private void saveTopologies() throws SQLException {
@@ -227,7 +226,7 @@ public class TopologyService implements DiscoveryService {
                 100
         );
         long end = System.currentTimeMillis();
-        log.info("Discovered Topologies # {} inserted in {} seconds.", topologicalLinkTList.size(), (end - start) / 1000);
+        log.debug("Discovered Topologies # {} inserted in {} seconds.", topologicalLinkTList.size(), (end - start) / 1000);
     }
 
     private void saveTopologies(TopologicalLink_T[] topologicalLinkTs) throws SQLException {
@@ -237,7 +236,8 @@ public class TopologyService implements DiscoveryService {
                 100
         );
         long end = System.currentTimeMillis();
-        log.info("Discovered Topologies # {} inserted in {} seconds.", topologicalLinkTs.length, (end - start) / 1000);
+        log.debug("Discovered Topologies # {} inserted in {} seconds.", topologicalLinkTs.length, (end - start) / 1000);
+        topologicalLinkTs = null;
     }
 
     private void logSubnetworkDetails(MultiLayerSubnetwork_T subnetwork) {

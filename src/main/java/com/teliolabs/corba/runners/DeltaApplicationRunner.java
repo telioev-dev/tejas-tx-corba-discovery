@@ -18,7 +18,7 @@ public class DeltaApplicationRunner implements ApplicationRunner {
 
 
     @Override
-    public void run(Map<String, String> args) {
+    public void run(Map<String, String> args) throws Exception {
         log.info("DeltaApplicationRunner starts.");
         updateJobState(JobState.RUNNING);
         dataManagerService.startDeltaDiscovery();

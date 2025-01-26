@@ -63,7 +63,7 @@ public class EquipmentService implements DiscoveryService {
         neNameArray[1].name = CorbaConstants.MANAGED_ELEMENT_STR;
 
         if (isDelta) {
-            neNameArray[2] = new NameAndStringValue_T(CorbaConstants.TIMESTAMP_SIGNATURE_STR, TxCorbaDiscoveryApplication.DELTA_TIMESTAMP);
+            neNameArray[2] = new NameAndStringValue_T(CorbaConstants.TIMESTAMP_SIGNATURE_STR, ExecutionContext.getInstance().getDeltaTimestamp());
         }
     }
 
@@ -147,7 +147,6 @@ public class EquipmentService implements DiscoveryService {
         EquipmentOrHolderList_THolder equipOrHolderList = new EquipmentOrHolderList_THolder();
         EquipmentOrHolderIterator_IHolder equipOrHolderItr = new EquipmentOrHolderIterator_IHolder();
         eiManager.getAllEquipment(neNameArray, HOW_MANY, equipOrHolderList, equipOrHolderItr);
-        log.debug("getAllEquipment: got {} EQs for ME {}.", equipOrHolderList.value.length, neNameArray[1].value);
         Collections.addAll(equipmentOrHolderTList, equipOrHolderList.value);
         if (equipOrHolderItr.value != null) {
             boolean exitWhile = false;

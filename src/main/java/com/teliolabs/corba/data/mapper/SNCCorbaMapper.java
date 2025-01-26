@@ -1,6 +1,7 @@
 package com.teliolabs.corba.data.mapper;
 
 import com.teliolabs.corba.TxCorbaDiscoveryApplication;
+import com.teliolabs.corba.application.ExecutionContext;
 import com.teliolabs.corba.data.dto.ManagedElement;
 import com.teliolabs.corba.data.dto.PTP;
 import com.teliolabs.corba.data.dto.SNC;
@@ -41,6 +42,7 @@ public class SNCCorbaMapper implements CorbaMapper<SubnetworkConnection_T, SNC> 
 
     @Override
     public SNC mapFromCorba(SubnetworkConnection_T input) {
+        ZonedDateTime executionTimestamp = ExecutionContext.getInstance().getExecutionTimestamp();
         String sncId = SNCUtils.getSNCId(input);
         String sncName = SNCUtils.getSNCUserLabel(input);
         String circuitId = SNCUtils.getCircuitId(sncName);
@@ -101,7 +103,7 @@ public class SNCCorbaMapper implements CorbaMapper<SubnetworkConnection_T, SNC> 
                 circuitId(circuitId == null ? null : Long.parseLong(circuitId)).
                 vCat(SNCUtils.getVCat(input)).
                 srfId(srfId == null ? null : Integer.parseInt(srfId)).
-                lastModifiedDate(TxCorbaDiscoveryApplication.NOW).build();
+                lastModifiedDate(executionTimestamp).build();
     }
 
     @Override
@@ -115,7 +117,7 @@ public class SNCCorbaMapper implements CorbaMapper<SubnetworkConnection_T, SNC> 
     }
 
     // A method to map a list of CORBA objects to DTOs
-    public List<SNC> mapFromCorbaArray(SubnetworkConnection_T [] elementTs) {
+    public List<SNC> mapFromCorbaArray(SubnetworkConnection_T[] elementTs) {
         return Arrays.stream(elementTs).map(this::mapFromCorba).collect(Collectors.toList());
     }
 }

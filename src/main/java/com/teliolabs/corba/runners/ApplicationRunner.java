@@ -10,7 +10,7 @@ import java.util.Map;
 
 @FunctionalInterface
 public interface ApplicationRunner {
-    void run(Map<String, String> args);
+    void run(Map<String, String> args) throws Exception;
 
     default void updateJobState(JobState jobState) {
         JobRepository jobRepository = JobRepository.getInstance();

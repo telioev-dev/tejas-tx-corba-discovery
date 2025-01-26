@@ -30,9 +30,6 @@ import java.time.ZonedDateTime;
 @Log4j2
 public class TxCorbaDiscoveryApplication {
 
-    public static final ZonedDateTime NOW = ZonedDateTime.now();
-    public static final String DELTA_TIMESTAMP = DateTimeUtils.getDeltaTimestamp(1);
-
     public static void main(String[] args) {
         log.info("TxCorbaDiscoveryApplication application starting");
 
@@ -140,7 +137,7 @@ public class TxCorbaDiscoveryApplication {
         }
     }
 
-    private static void executeRunner(String job, CommandLineParser cmdArgs, ExecutionContext executionContext) {
+    private static void executeRunner(String job, CommandLineParser cmdArgs, ExecutionContext executionContext) throws Exception {
         log.info("executeRunner called...");
         switch (job.toLowerCase()) {
             case "import":

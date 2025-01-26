@@ -5,15 +5,18 @@ import com.teliolabs.corba.TxCorbaDiscoveryApplication;
 import com.teliolabs.corba.application.ExecutionContext;
 import com.teliolabs.corba.data.dto.ManagedElement;
 import com.teliolabs.corba.data.dto.PTP;
+import com.teliolabs.corba.data.dto.SNC;
 import com.teliolabs.corba.data.holder.ManagedElementHolder;
 import com.teliolabs.corba.utils.ManagedElementUtils;
 import com.teliolabs.corba.utils.PTPUtils;
 import lombok.extern.log4j.Log4j2;
 import org.tmforum.mtnm.globaldefs.NameAndStringValue_T;
+import org.tmforum.mtnm.subnetworkConnection.SubnetworkConnection_T;
 import org.tmforum.mtnm.terminationPoint.TerminationPoint_T;
 import org.tmforum.mtnm.transmissionParameters.LayeredParameters_T;
 
 import java.time.ZonedDateTime;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -104,5 +107,9 @@ public class PTPCorbaMapper implements CorbaMapper<TerminationPoint_T, PTP> {
     // A method to map a list of CORBA objects to DTOs
     public List<PTP> mapFromCorbaList(List<TerminationPoint_T> elementTs) {
         return elementTs.stream().map(this::mapFromCorba).collect(Collectors.toList());
+    }
+
+    public List<PTP> mapFromCorbaArray(TerminationPoint_T[] elementTs) {
+        return Arrays.stream(elementTs).map(this::mapFromCorba).collect(Collectors.toList());
     }
 }

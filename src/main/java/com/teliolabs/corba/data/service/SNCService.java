@@ -3,34 +3,25 @@ package com.teliolabs.corba.data.service;
 import com.teliolabs.corba.application.ExecutionContext;
 import com.teliolabs.corba.application.types.DiscoveryItemType;
 import com.teliolabs.corba.application.types.ExecutionMode;
-import com.teliolabs.corba.data.dto.PTP;
 import com.teliolabs.corba.data.dto.SNC;
-import com.teliolabs.corba.data.holder.PTPHolder;
 import com.teliolabs.corba.data.holder.SNCHolder;
-import com.teliolabs.corba.data.mapper.PTPResultSetMapper;
 import com.teliolabs.corba.data.mapper.SNCCorbaMapper;
 import com.teliolabs.corba.data.mapper.SNCResultSetMapper;
-import com.teliolabs.corba.data.mapper.TopologyCorbaMapper;
 import com.teliolabs.corba.data.repository.SNCRepository;
 import com.teliolabs.corba.discovery.DiscoveryService;
 import com.teliolabs.corba.transport.CorbaConnection;
-import com.teliolabs.corba.transport.CorbaSession;
-import com.teliolabs.corba.utils.*;
-import lombok.RequiredArgsConstructor;
+import com.teliolabs.corba.utils.CollectionUtils;
+import com.teliolabs.corba.utils.CorbaConstants;
+import com.teliolabs.corba.utils.DateTimeUtils;
+import com.teliolabs.corba.utils.SNCUtils;
 import lombok.extern.log4j.Log4j2;
-import org.tmforum.mtnm.common.Common_IHolder;
-import org.tmforum.mtnm.emsMgr.EMSMgr_I;
-import org.tmforum.mtnm.emsMgr.EMSMgr_IHelper;
-import org.tmforum.mtnm.emsSession.EmsSession_I;
 import org.tmforum.mtnm.globaldefs.NameAndStringValue_T;
 import org.tmforum.mtnm.globaldefs.ProcessingFailureException;
-import org.tmforum.mtnm.multiLayerSubnetwork.*;
+import org.tmforum.mtnm.multiLayerSubnetwork.MultiLayerSubnetwork_T;
+import org.tmforum.mtnm.multiLayerSubnetwork.SubnetworkIterator_I;
+import org.tmforum.mtnm.multiLayerSubnetwork.SubnetworkIterator_IHolder;
+import org.tmforum.mtnm.multiLayerSubnetwork.SubnetworkList_THolder;
 import org.tmforum.mtnm.subnetworkConnection.*;
-import org.tmforum.mtnm.terminationPoint.TerminationPoint_T;
-import org.tmforum.mtnm.topologicalLink.TopologicalLinkIterator_I;
-import org.tmforum.mtnm.topologicalLink.TopologicalLinkIterator_IHolder;
-import org.tmforum.mtnm.topologicalLink.TopologicalLinkList_THolder;
-import org.tmforum.mtnm.topologicalLink.TopologicalLink_T;
 
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -44,11 +35,7 @@ public class SNCService implements DiscoveryService {
 
     private static SNCService instance;
     private final SNCRepository sncRepository;
-
-    private SubnetworkConnectionList_THolder subnetworkConnectionListTHolder = new SubnetworkConnectionList_THolder();
-    private SNCIterator_IHolder sncIteratorIHolder = new SNCIterator_IHolder();
     private List<SubnetworkConnection_T> subnetworkConnectionTList = new ArrayList<>();
-    private List<SNC> sncs = new ArrayList<>();
     private Integer discoveryCount = 0;
     private long start;
     private long end;
@@ -143,20 +130,19 @@ public class SNCService implements DiscoveryService {
 
     private void processSubnetworkConnections(SubnetworkConnectionList_THolder sncListHolder, SNCIterator_IHolder iteratorHolder) throws ProcessingFailureException, SQLException {
         int batchSize = ExecutionContext.getInstance().getCircle().getTopologyHowMuch();
-        if (iteratorHolder.value != null) {
-            SNCIterator_I iterator = iteratorHolder.value;
+        SNCIterator_I iterator = iteratorHolder.value;
+        if (iterator != null) {
             boolean hasMoreData = true;
             try {
                 while (hasMoreData) {
                     hasMoreData = iterator.next_n(batchSize, sncListHolder);
-                    //Collections.addAll(subnetworkConnectionTList, sncListHolder.value);
                     discoveryCount = discoveryCount + sncListHolder.value.length;
                     SubnetworkConnection_T[] subnetworkConnectionTs = sncListHolder.value;
-                    //List<SubnetworkConnection_T> tempList = Arrays.asList(sncListHolder.value);
                     saveSubnetworkConnections(subnetworkConnectionTs);
                     subnetworkConnectionTs = null;
-                    //log.info("Discovered SNCs so far: {}", subnetworkConnectionTList.size());
-                    log.info("Discovered SNCs so far: {}", discoveryCount);
+                    if (discoveryCount % 1000 == 0) {
+                        log.info("Discovered SNCs so far: {}", discoveryCount);
+                    }
                 }
             } catch (Exception e) {
                 log.error("Error fetching SNCs : {}", e.getMessage(), e);
@@ -269,17 +255,17 @@ public class SNCService implements DiscoveryService {
                 100
         );
         long end = System.currentTimeMillis();
-        log.info("Discovered SNCs # {} inserted in {} seconds.", subnetworkConnectionTList.size(), (end - start) / 1000);
+        log.debug("Discovered SNCs # {} inserted in {} seconds.", subnetworkConnectionTList.size(), (end - start) / 1000);
     }
 
     private void saveSubnetworkConnections(SubnetworkConnection_T[] subnetworkConnections) throws SQLException {
         long start = System.currentTimeMillis();
         sncRepository.insertSNCs(
                 SNCCorbaMapper.getInstance().mapFromCorbaArray(subnetworkConnections),
-                50
+                100
         );
         long end = System.currentTimeMillis();
-        log.info("Discovered SNCs # {} inserted in {} seconds.", subnetworkConnections.length, (end - start) / 1000);
+        log.debug("Discovered SNCs # {} inserted in {} seconds.", subnetworkConnections.length, (end - start) / 1000);
         subnetworkConnections = null;
     }
 

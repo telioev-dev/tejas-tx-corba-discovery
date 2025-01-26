@@ -1,6 +1,5 @@
 package com.teliolabs.corba.data.service;
 
-import com.teliolabs.corba.TxCorbaDiscoveryApplication;
 import com.teliolabs.corba.application.ExecutionContext;
 import com.teliolabs.corba.application.types.DiscoveryItemType;
 import com.teliolabs.corba.application.types.ExecutionMode;
@@ -23,6 +22,7 @@ import org.tmforum.mtnm.globaldefs.NameAndStringValue_T;
 import org.tmforum.mtnm.globaldefs.ProcessingFailureException;
 import org.tmforum.mtnm.managedElement.ManagedElement_T;
 import org.tmforum.mtnm.managedElementManager.ManagedElementMgr_I;
+import org.tmforum.mtnm.terminationPoint.TerminationPointIterator_I;
 import org.tmforum.mtnm.terminationPoint.TerminationPointIterator_IHolder;
 import org.tmforum.mtnm.terminationPoint.TerminationPointList_THolder;
 import org.tmforum.mtnm.terminationPoint.TerminationPoint_T;
@@ -64,16 +64,17 @@ public class PTPService implements DiscoveryService {
 
     private PTPService(PTPRepository ptpRepository) {
         this.ptpRepository = ptpRepository;
-        boolean isDelta = ExecutionContext.getInstance().getExecutionMode() == ExecutionMode.DELTA;
-        neNameArray = new NameAndStringValue_T[isDelta ? 3 : 2];
-        neNameArray[0] = new NameAndStringValue_T(CorbaConstants.EMS_STR, ExecutionContext.getInstance().getCircle().getEms());
-        neNameArray[1] = new NameAndStringValue_T();
-        neNameArray[1].name = CorbaConstants.MANAGED_ELEMENT_STR;
-
-        if (isDelta) {
-            neNameArray[2] = new NameAndStringValue_T(CorbaConstants.TIMESTAMP_SIGNATURE_STR, TxCorbaDiscoveryApplication.DELTA_TIMESTAMP);
+        DiscoveryItemType discoveryItemType = ExecutionContext.getInstance().getEntity();
+        if (DiscoveryItemType.PTP == discoveryItemType) {
+            boolean isDelta = ExecutionContext.getInstance().getExecutionMode() == ExecutionMode.DELTA;
+            neNameArray = new NameAndStringValue_T[isDelta ? 3 : 2];
+            neNameArray[0] = new NameAndStringValue_T(CorbaConstants.EMS_STR, ExecutionContext.getInstance().getCircle().getEms());
+            neNameArray[1] = new NameAndStringValue_T();
+            neNameArray[1].name = CorbaConstants.MANAGED_ELEMENT_STR;
+            if (isDelta) {
+                neNameArray[2] = new NameAndStringValue_T(CorbaConstants.TIMESTAMP_SIGNATURE_STR, ExecutionContext.getInstance().getDeltaTimestamp());
+            }
         }
-
     }
 
 
@@ -198,12 +199,13 @@ public class PTPService implements DiscoveryService {
         saveInMemory(ptpList);
     }
 
-    private void saveTerminationPoints(List<TerminationPoint_T> terminationPoints) throws SQLException {
-        List<PTP> ptpList = PTPCorbaMapper.getInstance().mapFromCorbaList(terminationPoints);
+    private void saveTerminationPoints(TerminationPoint_T[] terminationPoints) throws SQLException {
+        List<PTP> ptpList = PTPCorbaMapper.getInstance().mapFromCorbaArray(terminationPoints);
         long start = System.currentTimeMillis();
         ptpRepository.insertTerminationPoints(ptpList, 50);
         long end = System.currentTimeMillis();
-        log.info("Successfully saved {} Termination Points in {} seconds.", terminationPoints.size(), (end - start) / 1000);
+        log.debug("Successfully saved {} Termination Points in {} seconds.", terminationPoints.length, (end - start) / 1000);
+        terminationPoints = null;
     }
 
     public void discoverTerminationPointsSync(CorbaConnection corbaConnection, ExecutionMode executionMode) throws Exception {
@@ -251,30 +253,37 @@ public class PTPService implements DiscoveryService {
 
     private void processManagedElementStack(String meName) throws ProcessingFailureException, SQLException {
         neNameArray[1].value = meName;
-        List<TerminationPoint_T> terminationPoints = new ArrayList<>();
         int batchSize = ExecutionContext.getInstance().getCircle().getPtpHowMuch();
         TerminationPointList_THolder terminationPointListHolder = new TerminationPointList_THolder();
         TerminationPointIterator_IHolder terminationPointIteratorHolder = new TerminationPointIterator_IHolder();
         meManager.getAllPTPs(neNameArray, tpLayerRateList, connectionLayerRateList, batchSize, terminationPointListHolder, terminationPointIteratorHolder);
-        Collections.addAll(terminationPoints, terminationPointListHolder.value);
-        if (terminationPointIteratorHolder.value != null) {
+        TerminationPoint_T[] terminationPointTs = terminationPointListHolder.value;
+        saveTerminationPoints(terminationPointTs);
+        discoveryCount = discoveryCount + terminationPointTs.length;
+        TerminationPointIterator_I terminationPointIterator = terminationPointIteratorHolder.value;
+        if (terminationPointIterator != null) {
             boolean exitWhile = false;
             try {
                 boolean hasMoreData = true;
                 while (hasMoreData) {
-                    hasMoreData = terminationPointIteratorHolder.value.next_n(batchSize, terminationPointListHolder);
-                    Collections.addAll(terminationPoints, terminationPointListHolder.value);
+                    hasMoreData = terminationPointIterator.next_n(batchSize, terminationPointListHolder);
+                    terminationPointTs = terminationPointListHolder.value;
+                    saveTerminationPoints(terminationPointTs);
+                    discoveryCount = discoveryCount + terminationPointTs.length;
+                    terminationPointTs = null;
+                    terminationPointListHolder.value = null;
                 }
                 exitWhile = true;
             } finally {
                 if (!exitWhile) {
-                    terminationPointIteratorHolder.value.destroy();
+                    terminationPointIterator.destroy();
                 }
             }
-            discoveryCount = discoveryCount + terminationPoints.size();
-            log.info("Total Termination Points discovered so far: {}", discoveryCount);
+            if (discoveryCount % 1000 == 0) {
+                log.info("Total Termination Points discovered so far: {}", discoveryCount);
+            }
         }
-        saveTerminationPoints(terminationPoints);
+        neNameArray[1].value = null;
     }
 
     private void processManagedElementSync(String meName) throws ProcessingFailureException {

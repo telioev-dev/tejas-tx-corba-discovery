@@ -21,7 +21,7 @@ public class ImportApplicationRunner implements ApplicationRunner {
     }
 
     @Override
-    public void run(Map<String, String> args) {
+    public void run(Map<String, String> args) throws Exception {
         DiscoveryItemType discoveryItemType = ExecutionContext.getInstance().getEntity();
         log.info("ImportApplicationRunner starts for DiscoveryItemType: {}", discoveryItemType);
         updateJobState(JobState.RUNNING);
