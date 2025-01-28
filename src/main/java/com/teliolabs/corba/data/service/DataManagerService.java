@@ -84,6 +84,32 @@ public class DataManagerService {
 
     }
 
+    public void discoverRoutes(DiscoverySource discoverySource, ExecutionMode executionMode) {
+        log.info("Starting discovery of routes with execution mode: {}", executionMode);
+        RouteRepository routeRepository = RouteRepository.getInstance();
+        RouteService routeService = RouteService.getInstance(routeRepository);
+        if (discoverySource == DiscoverySource.DB) {
+
+        } else {
+            try (CorbaConnection corbaConnection = establishConnection()) {
+                if (corbaConnection == null) return;
+
+                if (executionMode == ExecutionMode.IMPORT) {
+                    routeService.discoverRoutes(corbaConnection, executionMode);
+                } else if (executionMode == ExecutionMode.DELTA) {
+                    routeService.runDeltaProcess(corbaConnection);
+                } else {
+                    log.warn("Unsupported execution mode: {}", executionMode.name());
+                }
+
+            } catch (Exception e) {
+                log.error("Error during fetchTopologicalLinks process: {}", ExecutionContext.getInstance().getCircle().getName(), e);
+                throw e;
+            }
+        }
+
+    }
+
     public void discoverSubnetworkConnections(DiscoverySource discoverySource, ExecutionMode executionMode) throws Exception {
         log.info("Starting discovery of SNCs with execution mode: {}", executionMode);
         SNCRepository sncRepository = SNCRepository.getInstance();

@@ -3,6 +3,8 @@ package com.teliolabs.corba.data.service;
 import com.teliolabs.corba.application.ExecutionContext;
 import com.teliolabs.corba.application.types.DiscoveryItemType;
 import com.teliolabs.corba.application.types.ExecutionMode;
+import com.teliolabs.corba.data.domain.TopologyEntity;
+import com.teliolabs.corba.data.dto.Topology;
 import com.teliolabs.corba.data.mapper.TopologyCorbaMapper;
 import com.teliolabs.corba.data.repository.TopologyRepository;
 import com.teliolabs.corba.discovery.DiscoveryService;
@@ -152,8 +154,8 @@ public class TopologyService implements DiscoveryService {
         }
     }
 
-    public void loadAll() {
-
+    public List<Topology> findAllTopologies() {
+        return topologyRepository.findAllTopologies();
     }
 
     private List<MultiLayerSubnetwork_T> fetchAllSubnetworks(CorbaConnection corbaConnection) throws ProcessingFailureException {

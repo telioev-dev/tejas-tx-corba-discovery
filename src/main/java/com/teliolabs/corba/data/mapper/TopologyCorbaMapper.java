@@ -50,11 +50,15 @@ public class TopologyCorbaMapper implements CorbaMapper<TopologicalLink_T, Topol
         PTP aEndPtp = ptpMap.get(aEndMeName + "_" + aEndPtpId);
         PTP zEndPtp = ptpMap.get(zEndMeName + "_" + zEndPtpId);
 
-        return Topology.builder().circle(ExecutionContext.getInstance().getCircle().getName()).
+        Topology topology = Topology.builder().circle(ExecutionContext.getInstance().getCircle().getName()).
                 nativeEmsName(input.nativeEMSName).
                 aEndEms(PTPUtils.getEMSName(input.aEndTP)).
                 aEndMeName(aEndMeName).
-                aEndMeLabel(aEndManagedElement != null ? aEndManagedElement.getNativeEmsName() : null).
+                aEndMeLabel(aEndManagedElement != null
+                        ? (aEndManagedElement.getNativeEmsName() != null
+                        ? aEndManagedElement.getNativeEmsName()
+                        : aEndManagedElement.getUserLabel())
+                        : null).
                 aEndPortName(aEndPtpId).
                 aEndPortLabel(aEndPtp != null ? aEndPtp.getPortNativeName() : null).
                 technologyLayer(TopologyUtils.getTechnologyLayer(input.additionalInfo)).
@@ -66,11 +70,18 @@ public class TopologyCorbaMapper implements CorbaMapper<TopologicalLink_T, Topol
                 ringName(TopologyUtils.getLinkRingName(input.additionalInfo)).
                 tpLinkName(TopologyUtils.getLinkName(input.name)).
                 zEndMeName(zEndMeName).
-                zEndMeLabel(zEndManagedElement != null ? zEndManagedElement.getNativeEmsName() : null).
+                zEndMeLabel(zEndManagedElement != null
+                        ? (zEndManagedElement.getNativeEmsName() != null
+                        ? zEndManagedElement.getNativeEmsName()
+                        : zEndManagedElement.getUserLabel())
+                        : null).
                 zEndEms(PTPUtils.getEMSName(input.zEndTP)).
                 zEndPortLabel(zEndPtp != null ? zEndPtp.getPortNativeName() : null).userLabel(input.userLabel).
                 zEndPortName(zEndPtpId).
                 lastModifiedDate(executionTimestamp).build();
+
+        TopologyUtils.deriveTopologyType(topology);
+        return topology;
     }
 
     @Override

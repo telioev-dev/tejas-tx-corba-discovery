@@ -22,7 +22,7 @@ public abstract class GenericRepository<T> {
     public <T> List<T> findAll(ResultSetMapperFunction<ResultSet, T> mapperFunction, String selectSQLTemplate) {
         String tableName = getTableName();
         String sql = String.format(selectSQLTemplate, tableName);
-
+        log.info("Table name: {}", tableName);
         try (Connection connection = DataSourceConfig.getHikariDataSource().getConnection(); PreparedStatement statement = connection.prepareStatement(sql); ResultSet resultSet = statement.executeQuery()) {
 
             List<T> results = new ArrayList<>();

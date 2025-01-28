@@ -1,5 +1,6 @@
 package com.teliolabs.corba.data.dto;
 
+import com.teliolabs.corba.data.types.TopologyType;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
@@ -30,6 +31,7 @@ public class Topology {
     private String protection;
     private String ringName;
     private String inconsistent;
+    private TopologyType topologyType;
     private String technologyLayer;
     private String circle;
     private boolean isDeleted;

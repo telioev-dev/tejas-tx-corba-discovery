@@ -16,9 +16,9 @@ public final class TopologyQueries {
             "tp_link_name, native_ems_name, rate, link_type, direction, " +
             "a_end_ems, a_end_me_name, a_end_me_label, a_end_port_name, a_end_port_label, " +
             "z_end_ems, z_end_me_name, z_end_me_label, z_end_port_name, z_end_port_label, " +
-            "user_label, protection, ring_name, inconsistent, technology_layer, circle, " +
+            "user_label, protection, ring_name, inconsistent, technology_layer, topology_type, circle, " +
             "last_modified_date" +
-            ") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+            ") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
     public static final String SELECT_ALL_SQL = "SELECT * FROM %s";
 

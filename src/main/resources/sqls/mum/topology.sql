@@ -22,6 +22,7 @@ CREATE TABLE ECI_TOPOLOGY_MUM
     ring_name          VARCHAR2(300),
     inconsistent       VARCHAR2(50),
     technology_layer   VARCHAR2(50),
+    topology_type      VARCHAR2(10),
     circle             VARCHAR2(50) DEFAULT 'MUM',
     vendor             VARCHAR2(50) DEFAULT 'ECI',
     last_modified_date TIMESTAMP WITH TIME ZONE,
@@ -30,3 +31,4 @@ CREATE TABLE ECI_TOPOLOGY_MUM
 
 -- Indexes for faster SELECT queries
 CREATE INDEX idx_ECI_TOPOLOGY_MUM_native_ems_name ON ECI_TOPOLOGY_MUM (native_ems_name);
+CREATE INDEX idx_ECI_TOPOLOGY_MUM_topology_type ON ECI_TOPOLOGY_MUM (topology_type);

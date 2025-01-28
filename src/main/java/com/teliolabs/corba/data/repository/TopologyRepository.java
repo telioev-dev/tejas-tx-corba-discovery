@@ -6,7 +6,9 @@ import com.teliolabs.corba.config.DataSourceConfig;
 import com.teliolabs.corba.data.domain.TopologyEntity;
 import com.teliolabs.corba.data.dto.Topology;
 import com.teliolabs.corba.data.exception.DataAccessException;
-import com.teliolabs.corba.data.mapper.TopologyEntityMapper;
+import com.teliolabs.corba.data.mapper.EquipmentResultSetMapper;
+import com.teliolabs.corba.data.mapper.TopologyResultSetMapper;
+import com.teliolabs.corba.data.queries.EquipmentQueries;
 import com.teliolabs.corba.data.queries.TopologyQueries;
 import com.teliolabs.corba.utils.DBUtils;
 import lombok.AccessLevel;
@@ -14,13 +16,12 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 
 import java.sql.*;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
 @Log4j2
-public class TopologyRepository {
+public class TopologyRepository extends GenericRepository<TopologyEntity> {
 
     private static final TopologyRepository INSTANCE = new TopologyRepository();
 
@@ -101,31 +102,13 @@ public class TopologyRepository {
         }
     }
 
-    public List<TopologyEntity> findAllTopologies() {
-        String tableName = DBUtils.getTable(DiscoveryItemType.TOPOLOGY);
-        String sql = String.format(TopologyQueries.SELECT_ALL_SQL, tableName);
-
-        List<TopologyEntity> topologies = new ArrayList<>();
-
-        try (Connection connection = DataSourceConfig.getHikariDataSource().getConnection();
-             PreparedStatement statement = connection.prepareStatement(sql);
-             ResultSet resultSet = statement.executeQuery()) {
-
-            while (resultSet.next()) {
-                topologies.add(mapResultSetToTopologyEntity(resultSet));
-            }
-        } catch (SQLException e) {
-            String errorMessage = "Error fetching all topologies from table: " + tableName;
-            log.error(errorMessage, e);
-            throw new DataAccessException(errorMessage, e);
-        }
-
-        return topologies;
+    public List<Topology> findAllTopologies() {
+        return findAll(TopologyResultSetMapper.getInstance()::mapToDto, EquipmentQueries.SELECT_ALL_SQL);
     }
 
 
     private TopologyEntity mapResultSetToTopologyEntity(ResultSet resultSet) throws SQLException {
-        return TopologyEntityMapper.getInstance().mapToEntity(resultSet);
+        return TopologyResultSetMapper.getInstance().mapToEntity(resultSet);
     }
 
     public void deleteTopologies(List<String> topologiesToDelete) {
@@ -168,7 +151,6 @@ public class TopologyRepository {
 
         String tableName = DBUtils.getTable(DiscoveryItemType.TOPOLOGY);
         String sql = String.format(TopologyQueries.INSERT_SQL, tableName);
-
         int totalInserted = 0;
 
         try (Connection connection = DataSourceConfig.getHikariDataSource().getConnection()) {
@@ -226,8 +208,19 @@ public class TopologyRepository {
         ps.setString(18, topology.getRingName());
         ps.setString(19, topology.getInconsistent());
         ps.setString(20, topology.getTechnologyLayer());
-        ps.setString(21, topology.getCircle());
-        ps.setTimestamp(22, Timestamp.from(topology.getLastModifiedDate().toInstant()));
+        ps.setString(21, topology.getTopologyType().value());
+        ps.setString(22, topology.getCircle());
+        ps.setTimestamp(23, Timestamp.from(topology.getLastModifiedDate().toInstant()));
+    }
+
+    @Override
+    protected String getTableName() {
+        return DBUtils.getTable(DiscoveryItemType.TOPOLOGY);
+    }
+
+    @Override
+    protected void setPreparedStatementParameters(PreparedStatement ps, TopologyEntity entity) throws SQLException {
+
     }
 
     private int executeBatch(PreparedStatement ps, Connection connection) throws SQLException {

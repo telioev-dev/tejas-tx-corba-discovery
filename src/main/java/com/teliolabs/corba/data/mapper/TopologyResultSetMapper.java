@@ -3,22 +3,23 @@ package com.teliolabs.corba.data.mapper;
 
 import com.teliolabs.corba.data.domain.TopologyEntity;
 import com.teliolabs.corba.data.dto.Topology;
+import com.teliolabs.corba.data.types.TopologyType;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.ZoneId;
 
-public class TopologyEntityMapper implements ResultSetMapper<TopologyEntity, Topology> {
+public class TopologyResultSetMapper implements ResultSetMapper<TopologyEntity, Topology> {
 
     // Singleton instance
-    private static final TopologyEntityMapper INSTANCE = new TopologyEntityMapper();
+    private static final TopologyResultSetMapper INSTANCE = new TopologyResultSetMapper();
 
     // Private constructor to enforce Singleton
-    private TopologyEntityMapper() {
+    private TopologyResultSetMapper() {
     }
 
     // Public method to get the instance
-    public static TopologyEntityMapper getInstance() {
+    public static TopologyResultSetMapper getInstance() {
         return INSTANCE;
     }
 
@@ -47,6 +48,7 @@ public class TopologyEntityMapper implements ResultSetMapper<TopologyEntity, Top
                 .ringName(resultSet.getString("ring_name"))
                 .inconsistent(resultSet.getString("inconsistent"))
                 .technologyLayer(resultSet.getString("technology_layer"))
+                .topologyType(TopologyType.fromValue(resultSet.getString("topology_type")))
                 .circle(resultSet.getString("circle"))
                 .lastModifiedDate(resultSet.
                         getTimestamp("last_modified_date").toInstant().
@@ -79,6 +81,7 @@ public class TopologyEntityMapper implements ResultSetMapper<TopologyEntity, Top
                 .ringName(resultSet.getString("ring_name"))
                 .inconsistent(resultSet.getString("inconsistent"))
                 .technologyLayer(resultSet.getString("technology_layer"))
+                .topologyType(TopologyType.fromValue(resultSet.getString("topology_type")))
                 .circle(resultSet.getString("circle"))
                 .lastModifiedDate(resultSet.
                         getTimestamp("last_modified_date").toInstant().
