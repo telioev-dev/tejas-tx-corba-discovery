@@ -12,9 +12,9 @@ public final class RouteQueries {
 
     public static final String SOFT_DELETE_SQL = "UPDATE %s SET is_deleted = 1 WHERE me_name IN ";
 
-    public static final String INSERT_SQL = "INSERT INTO %s (native_ems_name, me_name, user_label, product_name, " +
-            "ip_address, software_version, location, circle, last_modified_date) " +
-            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+    public static final String INSERT_SQL = "INSERT INTO %s (snc_id, snc_name, a_end_me, z_end_me, " +
+            "a_end_ptp, z_end_ptp, a_end_ctp, z_end_ctp, path_type, tuple_a, tuple_b, tuple, last_modified_date) " +
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
     public static final String SELECT_ALL_SQL = "SELECT pk, native_ems_name, me_name, user_label, " +
             "product_name, ip_address, software_version, location, circle, vendor, is_deleted, last_modified_date FROM %s";

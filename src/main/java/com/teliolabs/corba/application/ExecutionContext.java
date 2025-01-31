@@ -16,6 +16,7 @@ public class ExecutionContext {
     private Circle circle;
     private ExecutionMode executionMode;
     private DiscoveryItemType entity;
+    private String entityId;
     private JobEntity currentJob;
     private ZonedDateTime executionTimestamp;
     private String deltaTimestamp;

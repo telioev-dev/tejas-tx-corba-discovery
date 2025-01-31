@@ -110,6 +110,7 @@ public class TxCorbaDiscoveryApplication {
         String vendorName = cmdArgs.get(CommandLineArg.VENDOR);
         String timestamp = cmdArgs.get(CommandLineArg.TIMESTAMP);
         String deltaDays = cmdArgs.get(CommandLineArg.DELTA_DAYS_BEFORE);
+        String entityId = cmdArgs.get(CommandLineArg.ENTITY_ID);
         log.info("deltaDays: {}", deltaDays);
         try {
             Circle circle = circleService.findByNameAndVendor(circleName, vendorName);
@@ -119,6 +120,7 @@ public class TxCorbaDiscoveryApplication {
             executionContext.setCircle(circle);
             executionContext.setExecutionTimestamp(ZonedDateTime.parse(timestamp));
             executionContext.setDeltaTimestamp(deltaDays == null ? null : DateTimeUtils.getDeltaTimestamp(Integer.parseInt(deltaDays)));
+            executionContext.setEntityId(entityId);
 
             Thread haltedHook = new Thread(() -> {
                 log.info("Shutdown hook called, closing any existing Corba connection.");

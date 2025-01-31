@@ -4,6 +4,7 @@ public enum CommandLineArg {
     JOB("job"),
     CIRCLE("circle"),
     ENTITY("entity"),
+    ENTITY_ID("entity_id"),
     TIMESTAMP("timestamp"),
     DELTA_DAYS_BEFORE("delta_days_before"),
     VENDOR("vendor");

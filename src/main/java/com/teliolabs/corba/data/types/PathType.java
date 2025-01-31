@@ -1,7 +1,5 @@
 package com.teliolabs.corba.data.types;
 
-import com.teliolabs.corba.application.types.ExitCode;
-
 public enum PathType {
     MAIN(1), PROTECTION(2);
 

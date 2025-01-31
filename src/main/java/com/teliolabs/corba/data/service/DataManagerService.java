@@ -98,7 +98,7 @@ public class DataManagerService {
                 if (corbaConnection == null) return;
 
                 if (executionMode == ExecutionMode.IMPORT) {
-                    //routeService.deleteAll();
+                    routeService.deleteAll();
                     routeService.discoverRoutes(corbaConnection);
                 } else if (executionMode == ExecutionMode.DELTA) {
                     routeService.runDeltaProcess(corbaConnection);
