@@ -8,6 +8,8 @@ CREATE TABLE ECI_TOPOLOGY_GJ
     link_type          VARCHAR2(50),
     direction          VARCHAR2(50),
     a_end_ems          VARCHAR2(100),
+    a_end_vendor       VARCHAR2(10),
+    z_end_vendor       VARCHAR2(10),
     a_end_me_name      VARCHAR2(100),
     a_end_me_label     VARCHAR2(100),
     a_end_port_name    VARCHAR2(100),
@@ -26,6 +28,7 @@ CREATE TABLE ECI_TOPOLOGY_GJ
     circle             VARCHAR2(50) DEFAULT 'GJ',
     vendor             VARCHAR2(50) DEFAULT 'ECI',
     last_modified_date TIMESTAMP WITH TIME ZONE,
+    delta_timestamp TIMESTAMP WITH TIME ZONE,
     is_deleted         NUMBER(1,0) DEFAULT 0
 );
 

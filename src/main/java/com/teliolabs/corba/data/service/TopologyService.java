@@ -3,25 +3,22 @@ package com.teliolabs.corba.data.service;
 import com.teliolabs.corba.application.ExecutionContext;
 import com.teliolabs.corba.application.types.DiscoveryItemType;
 import com.teliolabs.corba.application.types.ExecutionMode;
-import com.teliolabs.corba.data.domain.TopologyEntity;
 import com.teliolabs.corba.data.dto.Topology;
 import com.teliolabs.corba.data.mapper.TopologyCorbaMapper;
 import com.teliolabs.corba.data.repository.TopologyRepository;
 import com.teliolabs.corba.discovery.DiscoveryService;
 import com.teliolabs.corba.transport.CorbaConnection;
-import com.teliolabs.corba.transport.CorbaSession;
 import com.teliolabs.corba.utils.CorbaConstants;
 import com.teliolabs.corba.utils.DateTimeUtils;
 import com.teliolabs.corba.utils.TopologyUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
-import org.tmforum.mtnm.common.Common_IHolder;
-import org.tmforum.mtnm.emsMgr.EMSMgr_I;
-import org.tmforum.mtnm.emsMgr.EMSMgr_IHelper;
-import org.tmforum.mtnm.emsSession.EmsSession_I;
 import org.tmforum.mtnm.globaldefs.NameAndStringValue_T;
 import org.tmforum.mtnm.globaldefs.ProcessingFailureException;
-import org.tmforum.mtnm.multiLayerSubnetwork.*;
+import org.tmforum.mtnm.multiLayerSubnetwork.MultiLayerSubnetwork_T;
+import org.tmforum.mtnm.multiLayerSubnetwork.SubnetworkIterator_I;
+import org.tmforum.mtnm.multiLayerSubnetwork.SubnetworkIterator_IHolder;
+import org.tmforum.mtnm.multiLayerSubnetwork.SubnetworkList_THolder;
 import org.tmforum.mtnm.topologicalLink.TopologicalLinkIterator_I;
 import org.tmforum.mtnm.topologicalLink.TopologicalLinkIterator_IHolder;
 import org.tmforum.mtnm.topologicalLink.TopologicalLinkList_THolder;
@@ -87,6 +84,25 @@ public class TopologyService implements DiscoveryService {
         };
     }
 
+
+    public void processDelta(TopologicalLink_T[] topologicalLinkTs) {
+        softDeleteTopologies(topologicalLinkTs);
+        List<TopologicalLink_T> topologiesToBeMerged = Arrays.stream(topologicalLinkTs)
+                .filter(topology -> !TopologyUtils.isTopologyDeleted(topology.additionalInfo))
+                .collect(Collectors.toList());
+        if (!topologiesToBeMerged.isEmpty()) {
+            try {
+                topologyRepository.upsertTopologies(
+                        TopologyCorbaMapper.getInstance().mapFromCorbaList(topologiesToBeMerged)
+                );
+                log.info("Topologies successfully merged into the database.");
+            } catch (SQLException e) {
+                log.error("Failed to upsert topologies into the database.", e);
+                throw new RuntimeException("Error upserting topologies.", e);
+            }
+        }
+    }
+
     public void runDeltaProcess(CorbaConnection corbaConnection) {
         discoverTopologies(corbaConnection, ExecutionMode.DELTA);
         if (topologicalLinkTList == null || topologicalLinkTList.isEmpty()) {
@@ -120,6 +136,19 @@ public class TopologyService implements DiscoveryService {
         }
     }
 
+
+    private void softDeleteTopologies(TopologicalLink_T[] topologicalLinkTs) {
+        List<String> topologiesToBeDeleted = Arrays.stream(topologicalLinkTs).
+                filter(topology -> TopologyUtils.isTopologyDeleted(topology.additionalInfo)).
+                map(topology -> TopologyUtils.getLinkName(topology.name)).collect(Collectors.toList());
+
+        if (!topologiesToBeDeleted.isEmpty()) {
+            log.info("Found {} Topologies that were deleted from NMS, marking them deleted in the DB.", topologiesToBeDeleted.size());
+            topologyRepository.deleteTopologies(topologiesToBeDeleted);
+        } else {
+            log.info("No Topologies were found to be deleted from NMS, hence exiting.");
+        }
+    }
 
     private void softDeleteTopologies() {
         List<String> topologiesToBeDeleted = topologicalLinkTList.
@@ -185,7 +214,11 @@ public class TopologyService implements DiscoveryService {
             corbaConnection.getMlsnManager().getAllTopologicalLinks(ExecutionMode.DELTA == ExecutionContext.getInstance().getExecutionMode() ?
                     buildDeltaSearchCriteria(subnetwork) : subnetwork.name, batchSize, linkListHolder, iteratorHolder);
             TopologicalLink_T[] topologicalLinkTs = linkListHolder.value;
-            saveTopologies(topologicalLinkTs);
+            if (isExecutionModeImport()) {
+                saveTopologies(topologicalLinkTs);
+            } else {
+                processDelta(topologicalLinkTs);
+            }
             discoveryCount = discoveryCount + topologicalLinkTs.length;
             topologicalLinkTs = null;
             processTopologicalLinks(linkListHolder, iteratorHolder);
@@ -207,7 +240,12 @@ public class TopologyService implements DiscoveryService {
                     hasMoreData = iterator.next_n(batchSize, linkListHolder);
                     discoveryCount = discoveryCount + linkListHolder.value.length;
                     TopologicalLink_T[] topologicalLinkTs = linkListHolder.value;
-                    saveTopologies(topologicalLinkTs);
+                    if (isExecutionModeImport()) {
+                        saveTopologies(topologicalLinkTs);
+                    } else {
+                        processDelta(topologicalLinkTs);
+                    }
+
                     topologicalLinkTs = null;
                     linkListHolder.value = null;
                     if (discoveryCount % 1000 == 0) {
@@ -268,6 +306,11 @@ public class TopologyService implements DiscoveryService {
     @Override
     public int discoverDelta(CorbaConnection corbaConnection) {
         return 0;
+    }
+
+    @Override
+    public int deleteAll() {
+        return topologyRepository.truncate();
     }
 
     @Override

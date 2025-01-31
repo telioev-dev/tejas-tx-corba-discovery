@@ -11,10 +11,12 @@ CREATE TABLE ECI_ME_DEL
     ip_address         VARCHAR2(255),      -- IP Address
     software_version   VARCHAR2(255),      -- Software Version
     location           VARCHAR2(255),      -- Location
+    communication_state           NUMBER(1,0),
     circle             VARCHAR2(255) DEFAULT 'DEL',      -- Circle
     vendor             VARCHAR2(50) DEFAULT 'ECI',
     last_modified_date TIMESTAMP WITH TIME ZONE,          -- Last modified date, using timestamp for timezone support
-    is_deleted         NUMBER(1,0) DEFAULT 0
+    is_deleted         NUMBER(1,0) DEFAULT 0,
+    delta_timestamp  TIMESTAMP WITH TIME ZONE
 );
 
 CREATE INDEX idx_ECI_ME_DEL_native_ems_name ON ECI_ME_DEL(native_ems_name);
@@ -36,7 +38,8 @@ CREATE TABLE ECI_EQUIPMENT_DEL
     circle             VARCHAR2(255) DEFAULT 'DEL',      -- Circle
     vendor             VARCHAR2(50) DEFAULT 'ECI',
     is_deleted          NUMBER(1,0) DEFAULT 0,
-    last_modified_date  TIMESTAMP WITH TIME ZONE
+    last_modified_date  TIMESTAMP WITH TIME ZONE,
+    delta_timestamp  TIMESTAMP WITH TIME ZONE
 );
 
 -- PTP --
@@ -59,7 +62,8 @@ CREATE TABLE ECI_PTP_DEL
     rate               VARCHAR2(50),
     type               VARCHAR2(50),
     is_deleted         NUMBER(1,0) DEFAULT 0,
-    last_modified_date TIMESTAMP WITH TIME ZONE
+    last_modified_date TIMESTAMP WITH TIME ZONE,
+    delta_timestamp  TIMESTAMP WITH TIME ZONE
 );
 
 CREATE INDEX idx_ECI_PTP_DEL_me_name ON ECI_PTP_DEL(me_name);
@@ -96,7 +100,8 @@ CREATE TABLE ECI_TOPOLOGY_DEL
     circle             VARCHAR2(50) DEFAULT 'DEL',
     vendor             VARCHAR2(50) DEFAULT 'ECI',
     last_modified_date TIMESTAMP WITH TIME ZONE,
-    is_deleted         NUMBER(1,0) DEFAULT 0
+    is_deleted         NUMBER(1,0) DEFAULT 0,
+    delta_timestamp  TIMESTAMP WITH TIME ZONE
 );
 
 CREATE INDEX idx_ECI_TOPOLOGY_DEL_native_ems_name ON ECI_TOPOLOGY_DEL (native_ems_name);
@@ -126,7 +131,8 @@ CREATE TABLE ECI_SNC_DEL
     circle             VARCHAR2(50) DEFAULT 'DEL',
     vendor             VARCHAR2(50) DEFAULT 'ECI',
     is_deleted         NUMBER(1,0) DEFAULT 0,
-    last_modified_date TIMESTAMP WITH TIME ZONE
+    last_modified_date TIMESTAMP WITH TIME ZONE,
+    delta_timestamp  TIMESTAMP WITH TIME ZONE
 );
 
 CREATE INDEX idx_ECI_SNC_DEL_snc_id ON ECI_SNC_DEL (snc_id);

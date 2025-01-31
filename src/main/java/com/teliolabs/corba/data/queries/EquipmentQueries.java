@@ -10,7 +10,7 @@ public final class EquipmentQueries {
 
     public static final String DELETE_ALL_SQL = "DELETE FROM %s";
 
-    public static final String SOFT_DELETE_SQL = "UPDATE %s SET is_deleted = 1 WHERE me_name IN ";
+    public static final String SOFT_DELETE_SQL = "UPDATE %s SET is_deleted = 1, delta_timestamp = ? WHERE me_name = ? AND location = ?";
 
     public static final String INSERT_SQL = "INSERT INTO %s " +
             "(me_name, me_label, user_label, software_version, serial_number, " +
@@ -22,32 +22,33 @@ public final class EquipmentQueries {
     public static final String UPSERT_SQL =
             "MERGE INTO %s target " +
                     "USING ( " +
-                    "    SELECT ? AS native_ems_name, ? AS me_name, ? AS user_label, ? AS product_name, " +
-                    "           ? AS ip_address, ? AS software_version, ? AS location, ? AS circle, " +
-                    "           ? AS last_modified_date " +
+                    "    SELECT ? AS me_name, ? AS me_label, ? AS user_label, ? AS software_version, " +
+                    "           ? AS serial_number, ? AS expected_equipment, ? AS installed_equipment, ? AS location, " +
+                    "           ? AS last_modified_date, ? AS delta_timestamp " +
                     "    FROM dual " +
                     ") source " +
-                    "ON (target.me_name = source.me_name AND target.is_deleted = 0) " +  // Match only active records
+                    "ON (target.me_name = source.me_name AND target.location=source.location) " +  // Match only active records
                     "WHEN MATCHED THEN " +
                     "    UPDATE SET " +
-                    "        native_ems_name = source.native_ems_name, " +
+                    "        me_label = source.me_label, " +
                     "        user_label = source.user_label, " +
-                    "        product_name = source.product_name, " +
-                    "        ip_address = source.ip_address, " +
                     "        software_version = source.software_version, " +
-                    "        location = source.location, " +
-                    "        circle = source.circle, " +
-                    "        last_modified_date = source.last_modified_date " +
+                    "        serial_number = source.serial_number, " +
+                    "        expected_equipment = source.expected_equipment, " +
+                    "        installed_equipment = source.installed_equipment, " +
+                    "        last_modified_date = source.last_modified_date, " +
+                    "        delta_timestamp = source.delta_timestamp, " +
+                    "        is_deleted = 0 " +
                     "WHEN NOT MATCHED THEN " +
-                    "    INSERT (native_ems_name, me_name, user_label, product_name, ip_address, " +
-                    "            software_version, location, circle, last_modified_date) " +
-                    "    VALUES (source.native_ems_name, source.me_name, source.user_label, source.product_name, " +
-                    "            source.ip_address, source.software_version, source.location, source.circle, " +
-                    "            source.last_modified_date) " +
+                    "    INSERT (me_name, me_label, user_label, software_version, serial_number, " +
+                    "            expected_equipment, installed_equipment, location, last_modified_date, delta_timestamp, is_deleted) " +
+                    "    VALUES (source.me_name, source.me_label, source.user_label, source.software_version, " +
+                    "            source.serial_number, source.expected_equipment, source.installed_equipment, source.location, source.last_modified_date, " +
+                    "            source.delta_timestamp, 0) " +
                     "    WHERE NOT EXISTS ( " +
                     "        SELECT 1 " +
                     "        FROM %s " +
-                    "        WHERE me_name = source.me_name AND is_deleted != 0 " +  // Exclude deleted records
+                    "        WHERE me_name = source.me_name AND location = source.location AND is_deleted != 0 " +
                     "    )";
 
 }

@@ -67,12 +67,13 @@ public class JobRepository {
         String sql = String.format(JobQueries.INSERT_DELTA_JOB_SQL, tableName);
         // Perform insert operation for import jobs
         try (Connection connection = DataSourceConfig.getHikariDataSource().getConnection();
-             PreparedStatement statement = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+             PreparedStatement statement = connection.prepareStatement(sql, new String[]{"JOB_ID"})) {
 
             statement.setString(1, job.getVendor());
             statement.setString(2, job.getCircle());
             statement.setString(3, job.getJobState().name());
             statement.setString(4, job.getRunningUser());
+            statement.setString(5, job.getEntity().name());
 
 
             statement.executeUpdate();
@@ -103,7 +104,7 @@ public class JobRepository {
 
         // Collect all non-null fields for update
         if (job.getJobState() != null) fieldsToUpdate.put("job_state", job.getJobState().name());
-        if (job.getDiscoveryCount() != null) fieldsToUpdate.put("discovery_item_count", job.getDiscoveryCount());
+        if (job.getDiscoveryCount() != null) fieldsToUpdate.put("total_count", job.getDiscoveryCount());
         if (job.getEndTimestamp() != null) fieldsToUpdate.put("end_timestamp", job.getEndTimestamp());
         if (job.getErrorMessage() != null) fieldsToUpdate.put("error_details", job.getErrorMessage());
         if (job.getDuration() != null) fieldsToUpdate.put("duration", job.getDuration());
@@ -141,6 +142,48 @@ public class JobRepository {
 
     public void updateDeltaJob(DeltaJobEntity job) {
         // Update delta job in the database
+        // Update import job in the database
+        StringBuilder sql = new StringBuilder("UPDATE DELTA_JOB SET ");
+        Map<String, Object> fieldsToUpdate = new LinkedHashMap<>();
+
+        // Collect all non-null fields for update
+        if (job.getJobState() != null) fieldsToUpdate.put("job_state", job.getJobState().name());
+        if (job.getDiscoveryCount() != null) fieldsToUpdate.put("total_count", job.getDiscoveryCount());
+        if (job.getDeletedCount() != null) fieldsToUpdate.put("deleted_count", job.getDeletedCount());
+        if (job.getUpsertedCount() != null) fieldsToUpdate.put("upserted_count", job.getUpsertedCount());
+        if (job.getEndTimestamp() != null) fieldsToUpdate.put("end_timestamp", job.getEndTimestamp());
+        if (job.getErrorMessage() != null) fieldsToUpdate.put("error_details", job.getErrorMessage());
+        if (job.getDuration() != null) fieldsToUpdate.put("duration", job.getDuration());
+        if (job.getEntity() != null) fieldsToUpdate.put("discovery_item", job.getEntity().name());
+
+
+        // Build dynamic SQL query
+        for (String column : fieldsToUpdate.keySet()) {
+            sql.append(column).append(" = ?, ");
+        }
+        sql.setLength(sql.length() - 2); // Remove trailing comma
+        sql.append(" WHERE job_id = ?");
+
+        log.info("UPDATE SQL: {}", sql.toString());
+        try (Connection connection = DataSourceConfig.getHikariDataSource().getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql.toString())) {
+
+            // Set parameter values
+            int index = 1;
+            for (Object value : fieldsToUpdate.values()) {
+                statement.setObject(index++, value);
+            }
+            statement.setLong(index, job.getJobId()); // Primary key as last parameter
+
+            // Execute update
+            int rowsUpdated = statement.executeUpdate();
+            if (rowsUpdated == 0) {
+                throw new SQLException("No rows updated for job_id=" + job.getJobId());
+            }
+
+        } catch (SQLException e) {
+            throw new DataAccessException("Error updating job with ID: " + job.getJobId(), e);
+        }
     }
 
     public void updateImportJobStatus(ImportJobEntity importJobEntity) {

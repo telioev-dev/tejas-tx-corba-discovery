@@ -26,4 +26,5 @@ public class PTPEntity {
     private String type;
     private boolean isDeleted;
     private ZonedDateTime lastModifiedDate;
+    private ZonedDateTime deltaTimestamp;
 }

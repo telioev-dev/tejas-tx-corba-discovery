@@ -13,5 +13,10 @@ CREATE TABLE ECI_EQUIPMENT_GJ
     circle             VARCHAR2(255) DEFAULT 'GJ',      -- Circle
     vendor             VARCHAR2(50) DEFAULT 'ECI',
     is_deleted          NUMBER(1,0) DEFAULT 0,
-    last_modified_date  TIMESTAMP WITH TIME ZONE
+    last_modified_date  TIMESTAMP WITH TIME ZONE,
+    delta_timestamp  TIMESTAMP WITH TIME ZONE
+);
+
+ALTER TABLE ECI_EQUIPMENT_GJ add (
+    delta_timestamp timestamp with time zone
 );

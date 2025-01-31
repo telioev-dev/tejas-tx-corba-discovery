@@ -37,4 +37,5 @@ public class TopologyEntity {
     private String vendor;
     private boolean isDeleted;
     private ZonedDateTime lastModifiedDate;
+    private ZonedDateTime deltaTimestamp;
 }

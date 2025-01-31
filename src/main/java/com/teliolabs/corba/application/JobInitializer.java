@@ -28,7 +28,7 @@ public class JobInitializer {
             ImportJobEntity importJob = ImportJobEntity.builder().vendor(vendor).entity(DiscoveryItemType.fromValue(entity)).circle(circle).runningUser(System.getProperty("user.name")).jobState(JobState.NEW).build();
             jobEntity = jobService.createImportJob(importJob);
         } else if (ExecutionMode.DELTA == ExecutionMode.fromValue(job)) {
-            DeltaJobEntity deltaJob = DeltaJobEntity.builder().vendor(vendor).circle(circle).runningUser(System.getProperty("user.name")).jobState(JobState.NEW).build();
+            DeltaJobEntity deltaJob = DeltaJobEntity.builder().vendor(vendor).entity(DiscoveryItemType.fromValue(entity)).circle(circle).runningUser(System.getProperty("user.name")).jobState(JobState.NEW).build();
             jobEntity = jobService.createDeltaJob(deltaJob);
         }
 

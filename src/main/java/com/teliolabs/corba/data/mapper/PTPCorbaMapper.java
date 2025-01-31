@@ -1,17 +1,14 @@
 package com.teliolabs.corba.data.mapper;
 
 
-import com.teliolabs.corba.TxCorbaDiscoveryApplication;
 import com.teliolabs.corba.application.ExecutionContext;
 import com.teliolabs.corba.data.dto.ManagedElement;
 import com.teliolabs.corba.data.dto.PTP;
-import com.teliolabs.corba.data.dto.SNC;
 import com.teliolabs.corba.data.holder.ManagedElementHolder;
 import com.teliolabs.corba.utils.ManagedElementUtils;
 import com.teliolabs.corba.utils.PTPUtils;
 import lombok.extern.log4j.Log4j2;
 import org.tmforum.mtnm.globaldefs.NameAndStringValue_T;
-import org.tmforum.mtnm.subnetworkConnection.SubnetworkConnection_T;
 import org.tmforum.mtnm.terminationPoint.TerminationPoint_T;
 import org.tmforum.mtnm.transmissionParameters.LayeredParameters_T;
 

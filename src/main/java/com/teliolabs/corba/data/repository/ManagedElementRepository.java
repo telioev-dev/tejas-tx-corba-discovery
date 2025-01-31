@@ -1,15 +1,20 @@
 package com.teliolabs.corba.data.repository;
 
 
+import com.teliolabs.corba.application.ExecutionContext;
 import com.teliolabs.corba.application.types.DiscoveryItemType;
 import com.teliolabs.corba.config.DataSourceConfig;
 import com.teliolabs.corba.data.domain.ManagedElementEntity;
 import com.teliolabs.corba.data.dto.ManagedElement;
+import com.teliolabs.corba.data.dto.Topology;
 import com.teliolabs.corba.data.exception.DataAccessException;
 import com.teliolabs.corba.data.mapper.ManagedElementResultSetMapper;
 import com.teliolabs.corba.data.mapper.ResultSetMapperFunction;
+import com.teliolabs.corba.data.mapper.TopologyResultSetMapper;
+import com.teliolabs.corba.data.queries.EquipmentQueries;
 import com.teliolabs.corba.data.queries.ManagedElementQueries;
 import com.teliolabs.corba.utils.DBUtils;
+import com.teliolabs.corba.utils.StringUtils;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
@@ -21,7 +26,7 @@ import java.util.List;
 
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
 @Log4j2
-public class ManagedElementRepository {
+public class ManagedElementRepository extends GenericRepository<ManagedElementEntity> {
 
     // Singleton instance
     private static final ManagedElementRepository INSTANCE = new ManagedElementRepository();
@@ -33,64 +38,26 @@ public class ManagedElementRepository {
     }
 
 
-    public void truncate() {
-        String tableName = DBUtils.getTable(DiscoveryItemType.ME);
-        String sql = String.format(ManagedElementQueries.TRUNCATE_SQL, tableName);
-
-        try (Connection connection = DataSourceConfig.getHikariDataSource().getConnection();
-             Statement stmt = connection.createStatement()) {
-
-            // Execute the TRUNCATE statement
-            stmt.executeUpdate(sql);
-
-            log.info("Table: {} truncated successfully", tableName);
-        } catch (SQLException e) {
-            log.error("Error truncating MEs", e);
-            throw new DataAccessException("Error truncating MEs", e);
-        }
+    @Override
+    protected String getTableName() {
+        return DBUtils.getTable(DiscoveryItemType.ME);
     }
 
-    public List<ManagedElementEntity> findAllManagedElements() {
 
-        String tableName = DBUtils.getTable(DiscoveryItemType.ME);
-        String sql = String.format(ManagedElementQueries.SELECT_ALL_SQL, tableName);
+    @Override
+    protected void setPreparedStatementParameters(PreparedStatement ps, ManagedElementEntity entity) throws SQLException {
 
-        try (Connection connection = DataSourceConfig.getHikariDataSource().getConnection();
-             PreparedStatement statement = connection.prepareStatement(sql);
-             ResultSet resultSet = statement.executeQuery()) {
-
-            List<ManagedElementEntity> managedElements = new ArrayList<>();
-
-            while (resultSet.next()) {
-                managedElements.add(mapResultSetToManagedElementEntity(resultSet));
-            }
-            return managedElements;
-        } catch (SQLException e) {
-            log.error("Error fetching all managed elements", e);
-            throw new DataAccessException("Error fetching all managed elements", e);
-        }
     }
 
-    public <T> List<T> findAllManagedElements(ResultSetMapperFunction<ResultSet, T> mapperFunction) {
 
-        String tableName = DBUtils.getTable(DiscoveryItemType.ME);
-        String sql = String.format(ManagedElementQueries.SELECT_ALL_SQL, tableName);
+    public List<ManagedElementEntity> findAllManagedElements(boolean fetchDeleted) {
+        return findAll(ManagedElementResultSetMapper.getInstance()::mapToEntity, fetchDeleted ? ManagedElementQueries.SELECT_ALL_SQL : ManagedElementQueries.SELECT_ALL_NON_DELETED_SQL);
+    }
 
-        try (Connection connection = DataSourceConfig.getHikariDataSource().getConnection();
-             PreparedStatement statement = connection.prepareStatement(sql);
-             ResultSet resultSet = statement.executeQuery()) {
 
-            List<T> results = new ArrayList<>();
-
-            while (resultSet.next()) {
-                results.add(mapperFunction.apply(resultSet));
-            }
-
-            return results;
-        } catch (SQLException e) {
-            log.error("Error fetching all managed elements", e);
-            throw new DataAccessException("Error fetching all managed elements", e);
-        }
+    public <T> List<T> findAllManagedElements(ResultSetMapperFunction<ResultSet, T> mapperFunction, boolean excludeDeleted) {
+        log.info("findAllManagedElements - excludeDeleted: {}", excludeDeleted);
+        return findAll(mapperFunction, excludeDeleted ? ManagedElementQueries.SELECT_ALL_NON_DELETED_SQL : ManagedElementQueries.SELECT_ALL_SQL);
     }
 
 
@@ -157,15 +124,17 @@ public class ManagedElementRepository {
                 for (int i = 0; i < managedElements.size(); i++) {
 
                     ManagedElement managedElement = managedElements.get(i);
-                    stmt.setString(1, managedElement.getNativeEmsName());
-                    stmt.setString(2, managedElement.getMeName());
-                    stmt.setString(3, managedElement.getUserLabel());
-                    stmt.setString(4, managedElement.getProductName());
-                    stmt.setString(5, managedElement.getIpAddress());
-                    stmt.setString(6, managedElement.getSoftwareVersion());
-                    stmt.setString(7, managedElement.getLocation());
-                    stmt.setString(8, managedElement.getCircle());
-                    stmt.setTimestamp(9, Timestamp.from(managedElement.getLastModifiedDate().toInstant()));
+
+                    stmt.setString(1, StringUtils.trimString(managedElement.getNativeEmsName()));
+                    stmt.setString(2, StringUtils.trimString(managedElement.getMeName()));
+                    stmt.setString(3, StringUtils.trimString(managedElement.getUserLabel()));
+                    stmt.setString(4, StringUtils.trimString(managedElement.getProductName()));
+                    stmt.setString(5, StringUtils.trimString(managedElement.getIpAddress()));
+                    stmt.setString(6, StringUtils.trimString(managedElement.getSoftwareVersion()));
+                    stmt.setString(7, StringUtils.trimString(managedElement.getLocation()));
+                    stmt.setInt(8, managedElement.getCommunicationState().getState());
+                    stmt.setString(9, StringUtils.trimString(managedElement.getCircle()));
+                    stmt.setTimestamp(10, Timestamp.from(managedElement.getLastModifiedDate().toInstant()));
 
                     stmt.addBatch(); // Add to batch
 
@@ -193,11 +162,12 @@ public class ManagedElementRepository {
 
     public void upsertManagedElements(List<ManagedElement> managedElements) throws SQLException {
         int[] result = new int[managedElements.size()];
+        ExecutionContext executionContext = ExecutionContext.getInstance();
+
         try (Connection connection = DataSourceConfig.getHikariDataSource().getConnection()) {
             String sequenceName = DBUtils.getSequence(DiscoveryItemType.ME);
             String tableName = DBUtils.getTable(DiscoveryItemType.ME);
 
-            log.info("DiscoveryItemType.ME SequenceName: {}", sequenceName);
             log.info("DiscoveryItemType.ME TableName: {}", tableName);
 
             String sql = String.format(ManagedElementQueries.UPSERT_SQL, tableName, tableName);
@@ -206,16 +176,20 @@ public class ManagedElementRepository {
             try (PreparedStatement stmt = connection.prepareStatement(sql)) {
                 int count = 0;
                 for (int i = 0; i < managedElements.size(); i++) {
+
                     ManagedElement managedElement = managedElements.get(i);
-                    stmt.setString(1, managedElement.getNativeEmsName());
-                    stmt.setString(2, managedElement.getMeName());
-                    stmt.setString(3, managedElement.getUserLabel());
-                    stmt.setString(4, managedElement.getProductName());
-                    stmt.setString(5, managedElement.getIpAddress());
-                    stmt.setString(6, managedElement.getSoftwareVersion());
-                    stmt.setString(7, managedElement.getLocation());
-                    stmt.setString(8, managedElement.getCircle());
-                    stmt.setTimestamp(9, Timestamp.from(managedElement.getLastModifiedDate().toInstant()));
+
+                    stmt.setString(1, StringUtils.trimString(managedElement.getNativeEmsName()));
+                    stmt.setString(2, StringUtils.trimString(managedElement.getMeName()));
+                    stmt.setString(3, StringUtils.trimString(managedElement.getUserLabel()));
+                    stmt.setString(4, StringUtils.trimString(managedElement.getProductName()));
+                    stmt.setString(5, StringUtils.trimString(managedElement.getIpAddress()));
+                    stmt.setString(6, StringUtils.trimString(managedElement.getSoftwareVersion()));
+                    stmt.setString(7, StringUtils.trimString(managedElement.getLocation()));
+                    stmt.setInt(8, managedElement.getCommunicationState().getState());
+                    stmt.setString(9, StringUtils.trimString(managedElement.getCircle()));
+                    stmt.setTimestamp(10, Timestamp.from(managedElement.getLastModifiedDate().toInstant()));
+                    stmt.setTimestamp(11, Timestamp.from(executionContext.getExecutionTimestamp().toInstant()));
                     stmt.addBatch();
                     // Execute batch after every 100 elements
                     boolean condition = (i + 1) % 100 == 0 || i == managedElements.size() - 1;

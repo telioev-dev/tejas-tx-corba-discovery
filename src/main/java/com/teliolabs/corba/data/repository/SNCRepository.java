@@ -7,6 +7,7 @@ import com.teliolabs.corba.data.dto.SNC;
 import com.teliolabs.corba.data.dto.Topology;
 import com.teliolabs.corba.data.exception.DataAccessException;
 import com.teliolabs.corba.data.mapper.ResultSetMapperFunction;
+import com.teliolabs.corba.data.queries.ManagedElementQueries;
 import com.teliolabs.corba.data.queries.PTPQueries;
 import com.teliolabs.corba.data.queries.SNCQueries;
 import com.teliolabs.corba.data.queries.TopologyQueries;
@@ -23,7 +24,7 @@ import java.util.List;
 
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
 @Log4j2
-public class SNCRepository {
+public class SNCRepository extends GenericRepository<SNC> {
 
     private static final SNCRepository INSTANCE = new SNCRepository();
 
@@ -31,51 +32,20 @@ public class SNCRepository {
         return INSTANCE;
     }
 
-    public <T> List<T> findAllSNCs(ResultSetMapperFunction<ResultSet, T> mapperFunction) {
-
-        String tableName = DBUtils.getTable(DiscoveryItemType.SNC);
-        String sql = String.format(SNCQueries.SELECT_ALL_SQL, tableName);
-
-        try (Connection connection = DataSourceConfig.getHikariDataSource().getConnection();
-             PreparedStatement statement = connection.prepareStatement(sql);
-             ResultSet resultSet = statement.executeQuery()) {
-
-            List<T> results = new ArrayList<>();
-
-            while (resultSet.next()) {
-                results.add(mapperFunction.apply(resultSet));
-            }
-
-            return results;
-        } catch (SQLException e) {
-            log.error("Error fetching all managed elements", e);
-            throw new DataAccessException("Error fetching all managed elements", e);
-        }
+    public <T> List<T> findAllSNCs(ResultSetMapperFunction<ResultSet, T> mapperFunction, boolean excludeDeleted) {
+        log.info("findAllSNCs - excludeDeleted: {}", excludeDeleted);
+        return findAll(mapperFunction, excludeDeleted ? SNCQueries.SELECT_ALL_NON_DELETED_SQL : SNCQueries.SELECT_ALL_SQL);
     }
 
-    public void truncate() {
-        String tableName = DBUtils.getTable(DiscoveryItemType.SNC);
-        String sql = String.format(SNCQueries.TRUNCATE_SQL, tableName);
-
-        try (Connection connection = DataSourceConfig.getHikariDataSource().getConnection();
-             Statement stmt = connection.createStatement()) {
-
-            // Execute the TRUNCATE statement
-            stmt.executeUpdate(sql);
-
-            log.info("Table: {} truncated successfully", tableName);
-        } catch (SQLException e) {
-            log.error("Error truncating SNCs", e);
-            throw new DataAccessException("Error truncating SNCs", e);
-        }
+    @Override
+    protected String getTableName() {
+        return DBUtils.getTable(DiscoveryItemType.SNC);
     }
 
     public void upsertSNCs(List<SNC> sncList) throws SQLException {
         try (Connection connection = DataSourceConfig.getHikariDataSource().getConnection()) {
-            String sequenceName = DBUtils.getSequence(DiscoveryItemType.SNC);
             String tableName = DBUtils.getTable(DiscoveryItemType.SNC);
 
-            log.info("DiscoveryItemType.SNC SequenceName: {}", sequenceName);
             log.info("DiscoveryItemType.SNC TableName: {}", tableName);
 
             String sql = String.format(SNCQueries.UPSERT_SQL, tableName, tableName);
@@ -85,6 +55,7 @@ public class SNCRepository {
                 int count = 0;
                 for (int i = 0; i < sncList.size(); i++) {
                     SNC snc = sncList.get(i);
+                    log.info("SNC insert/update: {}", snc.getSncId());
                     setPreparedStatementParameters(ps, snc);
                     ps.addBatch();
                     // Execute batch after every 100 elements
@@ -180,14 +151,14 @@ public class SNCRepository {
 
             int rowsUpdated = ps.executeUpdate();
             connection.commit();
-            log.info("Total topologies deleted: {}", rowsUpdated);
+            log.info("Total SNCs deleted: {}", rowsUpdated);
         } catch (SQLException e) {
-            log.error("Error during topology deletion, rolling back transaction.", e);
+            log.error("Error during SNC deletion, rolling back transaction.", e);
             throw new DataAccessException("Failed to delete topologies.", e);
         }
     }
 
-    private void setPreparedStatementParameters(PreparedStatement ps, SNC snc) throws SQLException {
+    protected void setPreparedStatementParameters(PreparedStatement ps, SNC snc) throws SQLException {
         ps.setString(1, snc.getSncId());
         ps.setString(2, snc.getSncName());
         ps.setObject(3, snc.getCircuitId(), Types.NUMERIC);
@@ -207,7 +178,7 @@ public class SNCRepository {
         ps.setTimestamp(17, Timestamp.from(snc.getLastModifiedDate().toInstant()));
     }
 
-    private int executeBatch(PreparedStatement ps, Connection connection) throws SQLException {
+    protected int executeBatch(PreparedStatement ps, Connection connection) throws SQLException {
         int[] batchResults = ps.executeBatch();
         connection.commit();
         ps.clearBatch();

@@ -47,7 +47,7 @@ public class ImportApplicationRunner implements ApplicationRunner {
             dataManagerService.discoverManagedElements(DiscoverySource.DB, ExecutionMode.IMPORT);
             dataManagerService.discoverTerminationPoints(DiscoverySource.DB, ExecutionMode.IMPORT);
             dataManagerService.discoverSubnetworkConnections(DiscoverySource.DB, ExecutionMode.IMPORT);
-
+            dataManagerService.discoverRoutes(DiscoverySource.NMS, ExecutionMode.IMPORT);
         } else if (DiscoveryItemType.ALL == discoveryItemType) {
             //dataManagerService.startFullDiscovery();
         }

@@ -11,10 +11,12 @@ CREATE TABLE ECI_ME_GJ
     ip_address         VARCHAR2(255),      -- IP Address
     software_version   VARCHAR2(255),      -- Software Version
     location           VARCHAR2(255),      -- Location
+    communication_state           NUMBER(1,0),
     circle             VARCHAR2(255) DEFAULT 'GJ',      -- Circle
     vendor             VARCHAR2(50) DEFAULT 'ECI',
     last_modified_date TIMESTAMP WITH TIME ZONE,          -- Last modified date, using timestamp for timezone support
-    is_deleted         NUMBER(1,0) DEFAULT 0
+    is_deleted         NUMBER(1,0) DEFAULT 0,
+    delta_timestamp  TIMESTAMP WITH TIME ZONE
 );
 
 CREATE INDEX idx_ECI_ME_GJ_native_ems_name ON ECI_ME_GJ(native_ems_name);
@@ -36,7 +38,8 @@ CREATE TABLE ECI_EQUIPMENT_GJ
     circle             VARCHAR2(255) DEFAULT 'GJ',      -- Circle
     vendor             VARCHAR2(50) DEFAULT 'ECI',
     is_deleted          NUMBER(1,0) DEFAULT 0,
-    last_modified_date  TIMESTAMP WITH TIME ZONE
+    last_modified_date  TIMESTAMP WITH TIME ZONE,
+    delta_timestamp  TIMESTAMP WITH TIME ZONE
 );
 
 -- PTP --
@@ -59,7 +62,8 @@ CREATE TABLE ECI_PTP_GJ
     rate               VARCHAR2(50),
     type               VARCHAR2(50),
     is_deleted         NUMBER(1,0) DEFAULT 0,
-    last_modified_date TIMESTAMP WITH TIME ZONE
+    last_modified_date TIMESTAMP WITH TIME ZONE,
+    delta_timestamp  TIMESTAMP WITH TIME ZONE
 );
 
 CREATE INDEX idx_ECI_PTP_GJ_me_name ON ECI_PTP_GJ(me_name);
@@ -96,7 +100,8 @@ CREATE TABLE ECI_TOPOLOGY_GJ
     circle             VARCHAR2(50) DEFAULT 'GJ',
     vendor             VARCHAR2(50) DEFAULT 'ECI',
     last_modified_date TIMESTAMP WITH TIME ZONE,
-    is_deleted         NUMBER(1,0) DEFAULT 0
+    is_deleted         NUMBER(1,0) DEFAULT 0,
+    delta_timestamp  TIMESTAMP WITH TIME ZONE
 );
 
 CREATE INDEX idx_ECI_TOPOLOGY_GJ_native_ems_name ON ECI_TOPOLOGY_GJ (native_ems_name);
@@ -126,7 +131,8 @@ CREATE TABLE ECI_SNC_GJ
     circle             VARCHAR2(50) DEFAULT 'GJ',
     vendor             VARCHAR2(50) DEFAULT 'ECI',
     is_deleted         NUMBER(1,0) DEFAULT 0,
-    last_modified_date TIMESTAMP WITH TIME ZONE
+    last_modified_date TIMESTAMP WITH TIME ZONE,
+    delta_timestamp  TIMESTAMP WITH TIME ZONE
 );
 
 CREATE INDEX idx_ECI_SNC_GJ_snc_id ON ECI_SNC_GJ (snc_id);

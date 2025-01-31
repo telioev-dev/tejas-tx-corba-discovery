@@ -6,6 +6,8 @@ import com.teliolabs.corba.application.domain.ImportJobEntity;
 import com.teliolabs.corba.application.domain.JobEntity;
 import com.teliolabs.corba.application.types.DiscoveryItemType;
 import com.teliolabs.corba.transport.CorbaConnection;
+import com.teliolabs.corba.transport.CorbaErrorHandler;
+import org.tmforum.mtnm.globaldefs.ProcessingFailureException;
 
 
 public interface DiscoveryService extends ExecutionContextAware {
@@ -15,6 +17,8 @@ public interface DiscoveryService extends ExecutionContextAware {
     int discover(CorbaConnection corbaConnection); // Returns the import discovery count
 
     int discoverDelta(CorbaConnection corbaConnection); // Returns the delta discovery count
+
+    int deleteAll();
 
     int getDiscoveryCount();
 
@@ -66,5 +70,10 @@ public interface DiscoveryService extends ExecutionContextAware {
         } else {
             return String.format("%d seconds", durationInSeconds);
         }
+    }
+
+    default void handleProcessingFailureException(ProcessingFailureException pfe, String param)
+            throws ProcessingFailureException {
+        CorbaErrorHandler.handleProcessingFailureException(pfe, param);
     }
 }

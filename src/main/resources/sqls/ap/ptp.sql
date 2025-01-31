@@ -16,7 +16,8 @@ CREATE TABLE ECI_PTP_AP
     rate               VARCHAR2(50),
     type               VARCHAR2(50),
     is_deleted         NUMBER(1,0) DEFAULT 0,
-    last_modified_date TIMESTAMP WITH TIME ZONE
+    last_modified_date TIMESTAMP WITH TIME ZONE,
+    delta_timestamp  TIMESTAMP WITH TIME ZONE
 );
 
 CREATE INDEX idx_ECI_PTP_AP_me_name ON ECI_PTP_AP(me_name);

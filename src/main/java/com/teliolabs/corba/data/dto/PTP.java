@@ -1,3 +1,4 @@
+
 package com.teliolabs.corba.data.dto;
 
 import lombok.Builder;
@@ -25,4 +26,5 @@ public class PTP {
     private String type;
     private boolean isDeleted;
     private ZonedDateTime lastModifiedDate;
+    private ZonedDateTime deltaTimestamp;
 }

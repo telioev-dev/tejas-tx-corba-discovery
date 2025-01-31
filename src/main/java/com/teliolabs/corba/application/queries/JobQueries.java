@@ -8,6 +8,6 @@ public class JobQueries {
                     "VALUES (?, ?, ?, ?, ?)";
 
     public static final String INSERT_DELTA_JOB_SQL =
-            "INSERT INTO %s (VENDOR, CIRCLE, JOB_STATE, RUN_BY) " +
-                    "VALUES (?, ?, ?)";
+            "INSERT INTO %s (VENDOR, CIRCLE, JOB_STATE, RUN_BY, DISCOVERY_ITEM) " +
+                    "VALUES (?, ?, ?, ?, ?)";
 }

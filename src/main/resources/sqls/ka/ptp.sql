@@ -16,7 +16,8 @@ CREATE TABLE ECI_PTP_KA
     rate               VARCHAR2(50),
     type               VARCHAR2(50),
     is_deleted         NUMBER(1,0) DEFAULT 0,
-    last_modified_date TIMESTAMP
+    last_modified_date TIMESTAMP,
+    delta_timestamp  TIMESTAMP WITH TIME ZONE
 );
 
 CREATE INDEX idx_ECI_PTP_KA_me_name ON ECI_PTP_KA(me_name);

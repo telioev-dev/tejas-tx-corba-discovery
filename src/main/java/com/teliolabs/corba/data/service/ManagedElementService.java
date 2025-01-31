@@ -24,10 +24,7 @@ import org.tmforum.mtnm.managedElement.ManagedElement_T;
 import org.tmforum.mtnm.managedElementManager.ManagedElementMgr_I;
 
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Log4j2
@@ -63,19 +60,17 @@ public class ManagedElementService implements DiscoveryService {
     private List<ManagedElement_T> managedElements = new ArrayList<>();
     private ManagedElementMgr_I meManager;
 
-
     public void runDeltaProcess(CorbaConnection corbaConnection) throws Exception {
-        List<ManagedElement_T> managedElementTs = discoverManagedElements(corbaConnection, ExecutionMode.DELTA);
+        List<ManagedElement_T> managedElementTs = discover(corbaConnection, ExecutionMode.DELTA);
         if (managedElementTs == null || managedElementTs.isEmpty()) {
             log.warn("No MEs discovered from NMS!");
             return;
         }
 
 
-        List<ManagedElementEntity> managedElementEntities = managedElementRepository.findAllManagedElements();
-
+        List<ManagedElementEntity> managedElementEntities = managedElementRepository.findAllManagedElements(false);
         if (managedElementEntities == null || managedElementEntities.isEmpty()) {
-            log.warn("No MEs found in the DB, let's insert!");
+            log.warn("No MEs found in the DB during Delta, let's insert!");
             try {
                 saveManagedElements();
             } catch (SQLException e) {
@@ -84,20 +79,20 @@ public class ManagedElementService implements DiscoveryService {
         } else {
             log.info("Discovered MEs (NMS): {}, Existing MEs (DB): {}", managedElementTs.size(), managedElementEntities.size());
             softDeleteManagedElements(managedElementTs, managedElementEntities);
-            try {
-                managedElementRepository.upsertManagedElements(ManagedElementCorbaMapper.getInstance().mapFromCorbaList(managedElementTs));
-                loadAll();
-                log.debug("Load all success...");
-            } catch (SQLException e) {
-                throw new RuntimeException(e);
-            }
+//            try {
+//                managedElementRepository.upsertManagedElements(ManagedElementCorbaMapper.getInstance().mapFromCorbaList(managedElementTs));
+//            } catch (SQLException e) {
+//                throw new RuntimeException(e);
+//            }
         }
 
 
     }
 
     public void loadAll() {
-        List<ManagedElement> managedElementList = managedElementRepository.findAllManagedElements(ManagedElementResultSetMapper.getInstance()::mapToDto);
+        boolean excludeDeleted = isExecutionModeDelta() && DiscoveryItemType.ME != ExecutionContext.getInstance().getEntity();
+        List<ManagedElement> managedElementList = managedElementRepository.
+                findAllManagedElements(ManagedElementResultSetMapper.getInstance()::mapToDto, excludeDeleted);
         if (managedElementList != null && !managedElementList.isEmpty()) {
             log.info("Total MEs {} loaded from DB", managedElementList.size());
             ManagedElementHolder.getInstance().setElements(CollectionUtils.convertListToMap(managedElementList, ManagedElement::getMeName));
@@ -116,6 +111,7 @@ public class ManagedElementService implements DiscoveryService {
 
         if (!meNamesToDelete.isEmpty()) {
             log.info("Found {} MEs that were deleted from NMS, marking them deleted in the DB.", meNamesToDelete.size());
+            log.info("To be deleted MEs: {}", meNamesToDelete);
             managedElementRepository.deleteManagedElements(meNamesToDelete);
         } else {
             log.info("No MEs were found to be deleted from NMS, hence exiting.");
@@ -123,7 +119,7 @@ public class ManagedElementService implements DiscoveryService {
     }
 
 
-    public List<ManagedElement_T> discoverManagedElements(CorbaConnection corbaConnection, ExecutionMode executionMode) throws Exception {
+    public List<ManagedElement_T> discover(CorbaConnection corbaConnection, ExecutionMode executionMode) throws Exception {
         meManager = corbaConnection.getMeManager();
         ManagedElementList_THolder managedElementListTHolder = new ManagedElementList_THolder();
         ManagedElementIterator_IHolder managedElementIteratorIHolder = new ManagedElementIterator_IHolder();
@@ -148,7 +144,6 @@ public class ManagedElementService implements DiscoveryService {
                 }
             end = System.currentTimeMillis();
             discoveryCount = managedElements.size();
-            //log.info("Network discovery for total MEs {} took {} seconds.", discoveryCount, (end - start) / 1000);
             printDiscoveryResult(end - start);
             updateJobStatus();
         } catch (ProcessingFailureException e) {
@@ -157,12 +152,21 @@ public class ManagedElementService implements DiscoveryService {
         try {
             if (managedElements != null && !managedElements.isEmpty() && executionMode == ExecutionMode.IMPORT) {
                 saveManagedElements();
+                managedElements.forEach(this::logManagedElementDetails);
             }
         } catch (Exception e) {
             log.error("Error inserting MEs into the DB", e);
             throw e;
         }
         return managedElements;
+    }
+
+    private void logManagedElementDetails(ManagedElement_T managedElement) {
+        Arrays.stream(managedElement.name).forEach(attr ->
+                log.info("ME Attribute - Name: {}, Value: {}", attr.name, attr.value));
+        log.info("Communication State: {}", managedElement.communicationState.value());
+        Arrays.stream(managedElement.additionalInfo).forEach(attr ->
+                log.info("ME Additional Info - Name: {}, Value: {}", attr.name, attr.value));
     }
 
     private void saveManagedElements() throws SQLException {
@@ -189,6 +193,11 @@ public class ManagedElementService implements DiscoveryService {
     @Override
     public int discoverDelta(CorbaConnection corbaConnection) {
         return 0;
+    }
+
+    @Override
+    public int deleteAll() {
+        return managedElementRepository.truncate();
     }
 
     @Override

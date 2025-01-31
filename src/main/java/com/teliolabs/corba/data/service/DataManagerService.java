@@ -11,6 +11,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.tmforum.mtnm.globaldefs.ProcessingFailureException;
 
+import java.sql.SQLException;
+
 @Log4j2
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
 public class DataManagerService {
@@ -69,6 +71,7 @@ public class DataManagerService {
                 if (corbaConnection == null) return;
 
                 if (executionMode == ExecutionMode.IMPORT) {
+                    topologyService.deleteAll();
                     topologyService.discoverTopologies(corbaConnection, executionMode);
                 } else if (executionMode == ExecutionMode.DELTA) {
                     topologyService.runDeltaProcess(corbaConnection);
@@ -84,7 +87,7 @@ public class DataManagerService {
 
     }
 
-    public void discoverRoutes(DiscoverySource discoverySource, ExecutionMode executionMode) {
+    public void discoverRoutes(DiscoverySource discoverySource, ExecutionMode executionMode) throws Exception {
         log.info("Starting discovery of routes with execution mode: {}", executionMode);
         RouteRepository routeRepository = RouteRepository.getInstance();
         RouteService routeService = RouteService.getInstance(routeRepository);
@@ -95,7 +98,8 @@ public class DataManagerService {
                 if (corbaConnection == null) return;
 
                 if (executionMode == ExecutionMode.IMPORT) {
-                    routeService.discoverRoutes(corbaConnection, executionMode);
+                    //routeService.deleteAll();
+                    routeService.discoverRoutes(corbaConnection);
                 } else if (executionMode == ExecutionMode.DELTA) {
                     routeService.runDeltaProcess(corbaConnection);
                 } else {
@@ -103,7 +107,7 @@ public class DataManagerService {
                 }
 
             } catch (Exception e) {
-                log.error("Error during fetchTopologicalLinks process: {}", ExecutionContext.getInstance().getCircle().getName(), e);
+                log.error("Error during discoverRoutes process: {}", ExecutionContext.getInstance().getCircle().getName(), e);
                 throw e;
             }
         }
@@ -119,6 +123,7 @@ public class DataManagerService {
                 if (corbaConnection == null) return;
 
                 if (executionMode == ExecutionMode.IMPORT) {
+                    sncService.deleteAll();
                     sncService.discoverSubnetworkConnections(corbaConnection, executionMode);
                 } else if (executionMode == ExecutionMode.DELTA) {
                     sncService.runDeltaProcess(corbaConnection);
@@ -194,7 +199,8 @@ public class DataManagerService {
                 if (corbaConnection == null) return;
 
                 if (executionMode == ExecutionMode.IMPORT) {
-                    managedElementService.discoverManagedElements(corbaConnection, executionMode);
+                    managedElementService.deleteAll();
+                    managedElementService.discover(corbaConnection, executionMode);
                 } else if (executionMode == ExecutionMode.DELTA) {
                     managedElementService.runDeltaProcess(corbaConnection);
                 } else {
@@ -222,6 +228,7 @@ public class DataManagerService {
 
                 EquipmentService equipmentService = EquipmentService.getInstance(equipmentRepository, corbaConnection);
                 if (executionMode == ExecutionMode.IMPORT) {
+                    equipmentService.deleteAll();
                     equipmentService.discoverEquipments();
                 } else if (executionMode == ExecutionMode.DELTA) {
                     equipmentService.runDeltaProcess();

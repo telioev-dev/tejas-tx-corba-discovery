@@ -18,18 +18,18 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Log4j2
-public class EquipmentCorbaMapper implements CorbaMapper<EquipmentOrHolder_T, EquipmentEntity> {
+public class EquipmentCorbaEntityMapper implements CorbaMapper<EquipmentOrHolder_T, EquipmentEntity> {
 
 
     // Singleton instance
-    private static final EquipmentCorbaMapper INSTANCE = new EquipmentCorbaMapper();
+    private static final EquipmentCorbaEntityMapper INSTANCE = new EquipmentCorbaEntityMapper();
 
     // Private constructor to enforce Singleton
-    private EquipmentCorbaMapper() {
+    private EquipmentCorbaEntityMapper() {
     }
 
     // Public method to get the instance
-    public static EquipmentCorbaMapper getInstance() {
+    public static EquipmentCorbaEntityMapper getInstance() {
         return INSTANCE;
     }
 

@@ -35,8 +35,8 @@ public class ArgumentValidator {
                 missingArgs.add(CommandLineArg.ENTITY.getKey());
             }
         } else if (ExecutionMode.DELTA == ExecutionMode.fromValue(jobValue)) {
-            if (cmdArgs.get(CommandLineArg.DELTA_DAYS) == null) {
-                missingArgs.add(CommandLineArg.DELTA_DAYS.getKey());
+            if (cmdArgs.get(CommandLineArg.DELTA_DAYS_BEFORE) == null) {
+                missingArgs.add(CommandLineArg.DELTA_DAYS_BEFORE.getKey());
             }
         }
 

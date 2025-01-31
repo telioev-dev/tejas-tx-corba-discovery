@@ -11,10 +11,12 @@ CREATE TABLE ECI_ME_KA
     ip_address         VARCHAR2(255),      -- IP Address
     software_version   VARCHAR2(255),      -- Software Version
     location           VARCHAR2(255),      -- Location
+    communication_state           NUMBER(1,0),
     circle             VARCHAR2(255) DEFAULT 'KA',      -- Circle
     vendor             VARCHAR2(50) DEFAULT 'ECI',
     last_modified_date TIMESTAMP,          -- Last modified date, using timestamp for timezone support
-    is_deleted         NUMBER(1,0) DEFAULT 0
+    is_deleted         NUMBER(1,0) DEFAULT 0,
+    delta_timestamp  TIMESTAMP WITH TIME ZONE
 );
 
 CREATE INDEX idx_ECI_ME_KA_native_ems_name ON ECI_ME_KA(native_ems_name);
@@ -36,7 +38,8 @@ CREATE TABLE ECI_EQUIPMENT_KA
     circle             VARCHAR2(255) DEFAULT 'KA',      -- Circle
     vendor             VARCHAR2(50) DEFAULT 'ECI',
     is_deleted          NUMBER(1,0) DEFAULT 0,
-    last_modified_date  TIMESTAMP WITH TIME ZONE
+    last_modified_date  TIMESTAMP WITH TIME ZONE,
+    delta_timestamp  TIMESTAMP WITH TIME ZONE
 );
 
 -- PTP --
@@ -59,7 +62,8 @@ CREATE TABLE ECI_PTP_KA
     rate               VARCHAR2(50),
     type               VARCHAR2(50),
     is_deleted         NUMBER(1,0) DEFAULT 0,
-    last_modified_date TIMESTAMP
+    last_modified_date TIMESTAMP,
+    delta_timestamp  TIMESTAMP WITH TIME ZONE
 );
 
 CREATE INDEX idx_ECI_PTP_KA_me_name ON ECI_PTP_KA(me_name);
@@ -97,7 +101,8 @@ CREATE TABLE ECI_TOPOLOGY_KA
     circle             VARCHAR2(50) DEFAULT 'KA',
     vendor             VARCHAR2(50) DEFAULT 'ECI',
     last_modified_date TIMESTAMP WITH TIME ZONE,
-    is_deleted         NUMBER(1,0) DEFAULT 0
+    is_deleted         NUMBER(1,0) DEFAULT 0,
+    delta_timestamp  TIMESTAMP WITH TIME ZONE
 );
 
 CREATE INDEX idx_ECI_TOPOLOGY_KA_native_ems_name ON ECI_TOPOLOGY_KA (native_ems_name);
@@ -127,7 +132,8 @@ CREATE TABLE ECI_SNC_KA
     circle             VARCHAR2(50) DEFAULT 'KA',
     vendor             VARCHAR2(50) DEFAULT 'ECI',
     is_deleted         NUMBER(1,0) DEFAULT 0,
-    last_modified_date TIMESTAMP
+    last_modified_date TIMESTAMP,
+    delta_timestamp  TIMESTAMP WITH TIME ZONE
 );
 
 CREATE INDEX idx_ECI_SNC_KA_snc_id ON ECI_SNC_KA (snc_id);

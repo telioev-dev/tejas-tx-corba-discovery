@@ -6,11 +6,11 @@ import com.teliolabs.corba.config.DataSourceConfig;
 import com.teliolabs.corba.data.domain.TopologyEntity;
 import com.teliolabs.corba.data.dto.Topology;
 import com.teliolabs.corba.data.exception.DataAccessException;
-import com.teliolabs.corba.data.mapper.EquipmentResultSetMapper;
 import com.teliolabs.corba.data.mapper.TopologyResultSetMapper;
 import com.teliolabs.corba.data.queries.EquipmentQueries;
 import com.teliolabs.corba.data.queries.TopologyQueries;
 import com.teliolabs.corba.utils.DBUtils;
+import com.teliolabs.corba.utils.StringUtils;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
@@ -27,23 +27,6 @@ public class TopologyRepository extends GenericRepository<TopologyEntity> {
 
     public static TopologyRepository getInstance() {
         return INSTANCE;
-    }
-
-    public void truncate() {
-        String tableName = DBUtils.getTable(DiscoveryItemType.TOPOLOGY);
-        String sql = String.format(TopologyQueries.TRUNCATE_SQL, tableName);
-
-        try (Connection connection = DataSourceConfig.getHikariDataSource().getConnection();
-             Statement stmt = connection.createStatement()) {
-
-            // Execute the TRUNCATE statement
-            stmt.executeUpdate(sql);
-
-            log.info("Table: {} truncated successfully", tableName);
-        } catch (SQLException e) {
-            log.error("Error truncating topologies", e);
-            throw new DataAccessException("Error truncating topologies", e);
-        }
     }
 
     public void upsertTopologies(List<Topology> topologies) throws SQLException {
@@ -130,7 +113,6 @@ public class TopologyRepository extends GenericRepository<TopologyEntity> {
 
             for (int i = 0; i < topologiesToDelete.size(); i++) {
                 String tpLinkName = topologiesToDelete.get(i);
-                log.info("tpLinkName:delete: {}", tpLinkName);
                 ps.setString(i + 1, tpLinkName);
             }
 
@@ -188,30 +170,31 @@ public class TopologyRepository extends GenericRepository<TopologyEntity> {
     }
 
     private void setPreparedStatementParameters(PreparedStatement ps, Topology topology) throws SQLException {
-        ps.setString(1, topology.getTpLinkName());
-        ps.setString(2, topology.getNativeEmsName());
+        ps.setString(1, StringUtils.trimString(topology.getTpLinkName()));
+        ps.setString(2, StringUtils.trimString(topology.getNativeEmsName()));
         ps.setInt(3, topology.getRate());
-        ps.setString(4, topology.getLinkType());
-        ps.setString(5, topology.getDirection());
-        ps.setString(6, topology.getAEndEms());
-        ps.setString(7, topology.getAEndMeName());
-        ps.setString(8, topology.getAEndMeLabel());
-        ps.setString(9, topology.getAEndPortName());
-        ps.setString(10, topology.getAEndPortLabel());
-        ps.setString(11, topology.getZEndEms());
-        ps.setString(12, topology.getZEndMeName());
-        ps.setString(13, topology.getZEndMeLabel());
-        ps.setString(14, topology.getZEndPortName());
-        ps.setString(15, topology.getZEndPortLabel());
-        ps.setString(16, topology.getUserLabel());
-        ps.setString(17, topology.getProtection());
-        ps.setString(18, topology.getRingName());
-        ps.setString(19, topology.getInconsistent());
-        ps.setString(20, topology.getTechnologyLayer());
-        ps.setString(21, topology.getTopologyType().value());
-        ps.setString(22, topology.getCircle());
+        ps.setString(4, StringUtils.trimString(topology.getLinkType()));
+        ps.setString(5, StringUtils.trimString(topology.getDirection()));
+        ps.setString(6, StringUtils.trimString(topology.getAEndEms()));
+        ps.setString(7, StringUtils.trimString(topology.getAEndMeName()));
+        ps.setString(8, StringUtils.trimString(topology.getAEndMeLabel()));
+        ps.setString(9, StringUtils.trimString(topology.getAEndPortName()));
+        ps.setString(10, StringUtils.trimString(topology.getAEndPortLabel()));
+        ps.setString(11, StringUtils.trimString(topology.getZEndEms()));
+        ps.setString(12, StringUtils.trimString(topology.getZEndMeName()));
+        ps.setString(13, StringUtils.trimString(topology.getZEndMeLabel()));
+        ps.setString(14, StringUtils.trimString(topology.getZEndPortName()));
+        ps.setString(15, StringUtils.trimString(topology.getZEndPortLabel()));
+        ps.setString(16, StringUtils.trimString(topology.getUserLabel()));
+        ps.setString(17, StringUtils.trimString(topology.getProtection()));
+        ps.setString(18, StringUtils.trimString(topology.getRingName()));
+        ps.setString(19, StringUtils.trimString(topology.getInconsistent()));
+        ps.setString(20, StringUtils.trimString(topology.getTechnologyLayer()));
+        ps.setString(21, StringUtils.trimString(topology.getTopologyType() != null ? topology.getTopologyType().value() : null));
+        ps.setString(22, StringUtils.trimString(topology.getCircle()));
         ps.setTimestamp(23, Timestamp.from(topology.getLastModifiedDate().toInstant()));
     }
+
 
     @Override
     protected String getTableName() {
@@ -223,10 +206,4 @@ public class TopologyRepository extends GenericRepository<TopologyEntity> {
 
     }
 
-    private int executeBatch(PreparedStatement ps, Connection connection) throws SQLException {
-        int[] batchResults = ps.executeBatch();
-        connection.commit();
-        ps.clearBatch();
-        return batchResults.length;
-    }
 }

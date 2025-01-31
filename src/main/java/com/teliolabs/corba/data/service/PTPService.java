@@ -11,6 +11,7 @@ import com.teliolabs.corba.data.mapper.PTPCorbaMapper;
 import com.teliolabs.corba.data.mapper.PTPResultSetMapper;
 import com.teliolabs.corba.data.repository.ManagedElementRepository;
 import com.teliolabs.corba.data.repository.PTPRepository;
+import com.teliolabs.corba.data.types.CommunicationState;
 import com.teliolabs.corba.discovery.DiscoveryService;
 import com.teliolabs.corba.transport.CorbaConnection;
 import com.teliolabs.corba.utils.CollectionUtils;
@@ -119,6 +120,24 @@ public class PTPService implements DiscoveryService {
         loadAll();
     }
 
+    private void processDelta(List<TerminationPoint_T> terminationPointTs) throws SQLException {
+        if (terminationPointTs == null || terminationPointTs.isEmpty()) {
+            log.debug("No delta PTPs found, returning.");
+            return;
+        }
+
+        softDeleteTerminationPoints(terminationPointTs);
+
+        List<TerminationPoint_T> newUpdatedTerminationPoints = terminationPointTs.
+                stream().
+                filter(ptp -> !PTPUtils.isTerminationPointDeleted(ptp.additionalInfo)).collect(Collectors.toList());
+        if (!newUpdatedTerminationPoints.isEmpty()) {
+            log.info("PTPss considered for upsert: {}", newUpdatedTerminationPoints.size());
+            ptpRepository.upsertTerminationPoints(PTPCorbaMapper.getInstance().mapFromCorbaList(newUpdatedTerminationPoints), 50);
+        }
+        terminationPointTs = null;
+    }
+
     public void loadAll() {
         List<PTP> ptpList = ptpRepository.findAllTerminationPoints(PTPResultSetMapper.getInstance()::mapToDto);
         if (ptpList == null || ptpList.isEmpty()) {
@@ -128,6 +147,19 @@ public class PTPService implements DiscoveryService {
             log.info("Total PTPs {} loaded from DB", ptpList.size());
         }
         ptpList = null;
+    }
+
+    private void softDeleteTerminationPoints(List<TerminationPoint_T> terminationPoints) {
+        List<TerminationPoint_T> terminationPointsToBeDeleted = terminationPoints.
+                stream().
+                filter(ptp -> PTPUtils.isTerminationPointDeleted(ptp.additionalInfo)).collect(Collectors.toList());
+
+        if (!terminationPointsToBeDeleted.isEmpty()) {
+            log.info("Found {} PTPs that were deleted from NMS, marking them deleted in the DB.", terminationPointsToBeDeleted.size());
+            //ptpRepository.deleteTopologies(topologiesToBeDeleted);
+        } else {
+            log.info("No Topologies were found to be deleted from NMS, hence exiting.");
+        }
     }
 
     private void softDeleteTerminationPoints() {
@@ -153,7 +185,8 @@ public class PTPService implements DiscoveryService {
             int i = 0;
             try {
                 for (String meName : meNamesSet) {
-                    if (ExecutionMode.DELTA == executionMode && meName.contains("UME"))
+                    ManagedElement managedElement = managedElements.get(meName);
+                    if ((isExecutionModeDelta() && meName.contains("UME")) || CommunicationState.UNAVAILABLE == managedElement.getCommunicationState())
                         continue; // IGNORE UMEs for PTP
 
                     log.info("#{} ME '{}' for PTP processing.", i++, meName);
@@ -199,12 +232,12 @@ public class PTPService implements DiscoveryService {
         saveInMemory(ptpList);
     }
 
-    private void saveTerminationPoints(TerminationPoint_T[] terminationPoints) throws SQLException {
-        List<PTP> ptpList = PTPCorbaMapper.getInstance().mapFromCorbaArray(terminationPoints);
+    private void saveTerminationPoints(List<TerminationPoint_T> terminationPoints) throws SQLException {
+        List<PTP> ptpList = PTPCorbaMapper.getInstance().mapFromCorbaList(terminationPoints);
         long start = System.currentTimeMillis();
         ptpRepository.insertTerminationPoints(ptpList, 50);
         long end = System.currentTimeMillis();
-        log.debug("Successfully saved {} Termination Points in {} seconds.", terminationPoints.length, (end - start) / 1000);
+        log.debug("Successfully saved {} Termination Points in {} seconds.", terminationPoints.size(), (end - start) / 1000);
         terminationPoints = null;
     }
 
@@ -215,7 +248,7 @@ public class PTPService implements DiscoveryService {
         List<ManagedElement_T> managedElements = managedElementService.getManagedElements();
         if (managedElements == null || managedElements.isEmpty()) {
             log.info("ME discovery was not found to be run or failed, hence initiating again for PTPs");
-            managedElements = ManagedElementService.getInstance().discoverManagedElements(corbaConnection, executionMode);
+            managedElements = ManagedElementService.getInstance().discover(corbaConnection, executionMode);
         } else {
             log.info("Discovered MEs found for PTP discovery, using them.");
         }
@@ -254,12 +287,11 @@ public class PTPService implements DiscoveryService {
     private void processManagedElementStack(String meName) throws ProcessingFailureException, SQLException {
         neNameArray[1].value = meName;
         int batchSize = ExecutionContext.getInstance().getCircle().getPtpHowMuch();
+        List<TerminationPoint_T> terminationPointTs = new ArrayList<>();
         TerminationPointList_THolder terminationPointListHolder = new TerminationPointList_THolder();
         TerminationPointIterator_IHolder terminationPointIteratorHolder = new TerminationPointIterator_IHolder();
         meManager.getAllPTPs(neNameArray, tpLayerRateList, connectionLayerRateList, batchSize, terminationPointListHolder, terminationPointIteratorHolder);
-        TerminationPoint_T[] terminationPointTs = terminationPointListHolder.value;
-        saveTerminationPoints(terminationPointTs);
-        discoveryCount = discoveryCount + terminationPointTs.length;
+        Collections.addAll(terminationPointTs, terminationPointListHolder.value);
         TerminationPointIterator_I terminationPointIterator = terminationPointIteratorHolder.value;
         if (terminationPointIterator != null) {
             boolean exitWhile = false;
@@ -267,10 +299,7 @@ public class PTPService implements DiscoveryService {
                 boolean hasMoreData = true;
                 while (hasMoreData) {
                     hasMoreData = terminationPointIterator.next_n(batchSize, terminationPointListHolder);
-                    terminationPointTs = terminationPointListHolder.value;
-                    saveTerminationPoints(terminationPointTs);
-                    discoveryCount = discoveryCount + terminationPointTs.length;
-                    terminationPointTs = null;
+                    Collections.addAll(terminationPointTs, terminationPointListHolder.value);
                     terminationPointListHolder.value = null;
                 }
                 exitWhile = true;
@@ -282,6 +311,13 @@ public class PTPService implements DiscoveryService {
             if (discoveryCount % 1000 == 0) {
                 log.info("Total Termination Points discovered so far: {}", discoveryCount);
             }
+        }
+        discoveryCount = discoveryCount + terminationPointTs.size();
+        if (isExecutionModeImport()) {
+            saveTerminationPoints(terminationPointTs);
+        } else {
+            terminationPointTs.forEach(this::logTerminationPointDetails);
+            processDelta(terminationPointTs);
         }
         neNameArray[1].value = null;
     }
@@ -390,6 +426,11 @@ public class PTPService implements DiscoveryService {
 
     @Override
     public int discoverDelta(CorbaConnection corbaConnection) {
+        return 0;
+    }
+
+    @Override
+    public int deleteAll() {
         return 0;
     }
 

@@ -72,6 +72,7 @@ public class SNCService implements DiscoveryService {
             if (CorbaConstants.EMS_STR.equalsIgnoreCase(s.name)) {
                 emsName = s.value;
             } else if (CorbaConstants.MULTILAYER_SUBNETWORK_STR.equalsIgnoreCase(s.name)) {
+                log.info("s.value " + s.value);
                 subnetworkName = s.value;
             }
         }
@@ -79,7 +80,7 @@ public class SNCService implements DiscoveryService {
         return new NameAndStringValue_T[]{
                 new NameAndStringValue_T(CorbaConstants.EMS_STR, emsName),
                 new NameAndStringValue_T(CorbaConstants.MULTILAYER_SUBNETWORK_STR, subnetworkName),
-                new NameAndStringValue_T(CorbaConstants.TIMESTAMP_SIGNATURE_STR, DateTimeUtils.getDeltaTimestamp(1))
+                new NameAndStringValue_T(CorbaConstants.TIMESTAMP_SIGNATURE_STR, ExecutionContext.getInstance().getDeltaTimestamp())
         };
     }
 
@@ -115,7 +116,12 @@ public class SNCService implements DiscoveryService {
             //Collections.addAll(subnetworkConnectionTList, sncList.value);
             //List<SubnetworkConnection_T> tempList = Arrays.asList(subnetworkConnectionListTHolder.value);
             SubnetworkConnection_T[] subnetworkConnectionTs = subnetworkConnectionListTHolder.value;
-            saveSubnetworkConnections(subnetworkConnectionTs);
+            if (isExecutionModeImport()) {
+                saveSubnetworkConnections(subnetworkConnectionTs);
+            } else {
+                processDelta(subnetworkConnectionTs);
+            }
+
             discoveryCount = discoveryCount + subnetworkConnectionTs.length;
             subnetworkConnectionTs = null;
             processSubnetworkConnections(subnetworkConnectionListTHolder, sncIteratorIHolder);
@@ -138,7 +144,11 @@ public class SNCService implements DiscoveryService {
                     hasMoreData = iterator.next_n(batchSize, sncListHolder);
                     discoveryCount = discoveryCount + sncListHolder.value.length;
                     SubnetworkConnection_T[] subnetworkConnectionTs = sncListHolder.value;
-                    saveSubnetworkConnections(subnetworkConnectionTs);
+                    if (isExecutionModeImport()) {
+                        saveSubnetworkConnections(subnetworkConnectionTs);
+                    } else {
+                        processDelta(subnetworkConnectionTs);
+                    }
                     subnetworkConnectionTs = null;
                     if (discoveryCount % 1000 == 0) {
                         log.info("Discovered SNCs so far: {}", discoveryCount);
@@ -153,8 +163,14 @@ public class SNCService implements DiscoveryService {
     }
 
     public void loadAll() {
-        List<SNC> sncList = sncRepository.findAllSNCs(SNCResultSetMapper.getInstance()::mapToDto);
-        SNCHolder.getInstance().setElements(CollectionUtils.convertListToMap(sncList, SNC::getSncId));
+        List<SNC> sncList = sncRepository.findAllSNCs(SNCResultSetMapper.getInstance()::mapToDto, true);
+        if (sncList != null && !sncList.isEmpty()) {
+            SNCHolder.getInstance().setElements(CollectionUtils.convertListToMap(sncList, SNC::getSncId));
+            log.info("Total SNCs {} loaded from DB", sncList.size());
+        } else {
+            log.error("No SNCs found to be loaded from the DB");
+        }
+
         sncList = null;
     }
 
@@ -200,37 +216,38 @@ public class SNCService implements DiscoveryService {
         return subnetworks;
     }
 
+    public void processDelta(SubnetworkConnection_T[] subnetworkConnectionTs) {
+        softDeleteSNCs(subnetworkConnectionTs);
+        List<SubnetworkConnection_T> sncsToBeMerged = Arrays.stream(subnetworkConnectionTs)
+                .filter(snc -> !SNCUtils.isSNCDeleted(snc.additionalInfo))
+                .collect(Collectors.toList());
+        if (!sncsToBeMerged.isEmpty()) {
+            try {
+                sncRepository.upsertSNCs(
+                        SNCCorbaMapper.getInstance().mapFromCorbaList(sncsToBeMerged)
+                );
+                log.info("SNCs successfully merged into the database.");
+            } catch (SQLException e) {
+                log.error("Failed to upsert topologies into the database.", e);
+                throw new RuntimeException("Error upserting topologies.", e);
+            }
+        }
+    }
 
     public void runDeltaProcess(CorbaConnection corbaConnection) throws SQLException, ProcessingFailureException {
         discoverSubnetworkConnections(corbaConnection, ExecutionMode.DELTA);
-        if (subnetworkConnectionTList == null || subnetworkConnectionTList.isEmpty()) {
-            log.warn("No Delta SNCs discovered from NMS!");
-            return;
-        }
+    }
 
-        log.info("SNCs discovered for delta processing: {}", subnetworkConnectionTList.size());
+    private void softDeleteSNCs(SubnetworkConnection_T[] subnetworkConnectionTs) {
+        List<String> sncsToBeDeleted = Arrays.stream(subnetworkConnectionTs).
+                filter(snc -> SNCUtils.isSNCDeleted(snc.additionalInfo)).
+                map(SNCUtils::getSNCId).collect(Collectors.toList());
 
-        softDeleteSNCs();
-
-        List<SubnetworkConnection_T> sncsToBeMerged = subnetworkConnectionTList.stream()
-                .filter(snc -> !SNCUtils.isSNCDeleted(snc.additionalInfo))
-                .collect(Collectors.toList());
-
-        log.info("Any SNCs that were not deleted?: {}", sncsToBeMerged.size());
-
-        if (sncsToBeMerged.isEmpty()) {
-            log.info("No SNCs to be merged after filtering deleted SNCs.");
-            return;
-        }
-
-        try {
-            sncRepository.upsertSNCs(
-                    SNCCorbaMapper.getInstance().mapFromCorbaList(sncsToBeMerged)
-            );
-            log.info("SNCs successfully merged into the database.");
-        } catch (SQLException e) {
-            log.error("Failed to upsert topologies into the database.", e);
-            throw new RuntimeException("Error upserting topologies.", e);
+        if (!sncsToBeDeleted.isEmpty()) {
+            log.info("Found {} SNCs that were deleted from NMS, marking them deleted in the DB.", sncsToBeDeleted.size());
+            sncRepository.deleteSubnetworkConnections(sncsToBeDeleted);
+        } else {
+            log.info("No SNCs were found to be deleted from NMS, hence exiting.");
         }
     }
 
@@ -276,6 +293,11 @@ public class SNCService implements DiscoveryService {
 
     @Override
     public int discoverDelta(CorbaConnection corbaConnection) {
+        return 0;
+    }
+
+    @Override
+    public int deleteAll() {
         return 0;
     }
 

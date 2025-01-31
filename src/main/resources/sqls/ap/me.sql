@@ -9,10 +9,12 @@ CREATE TABLE ECI_ME_AP
     ip_address         VARCHAR2(255),      -- IP Address
     software_version   VARCHAR2(255),      -- Software Version
     location           VARCHAR2(255),      -- Location
+    communication_state           NUMBER(1,0),      -- Communication State
     circle             VARCHAR2(255) DEFAULT 'AP',      -- Circle
     vendor             VARCHAR2(50) DEFAULT 'ECI',
     last_modified_date TIMESTAMP WITH TIME ZONE,          -- Last modified date, using timestamp for timezone support
-    is_deleted         NUMBER(1,0) DEFAULT 0
+    is_deleted         NUMBER(1,0) DEFAULT 0,
+    delta_timestamp  TIMESTAMP WITH TIME ZONE
 );
 
 CREATE INDEX idx_ECI_ME_AP_native_ems_name ON ECI_ME_AP(native_ems_name);

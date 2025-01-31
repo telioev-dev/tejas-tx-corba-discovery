@@ -9,9 +9,11 @@ CREATE TABLE ECI_ME_GJ
     ip_address         VARCHAR2(255),      -- IP Address
     software_version   VARCHAR2(255),      -- Software Version
     location           VARCHAR2(255),      -- Location
+    communication_state           NUMBER(1,0),      -- Communication State
     circle             VARCHAR2(255) DEFAULT 'GJ',      -- Circle
     vendor             VARCHAR2(50) DEFAULT 'ECI',
     last_modified_date TIMESTAMP WITH TIME ZONE,          -- Last modified date, using timestamp for timezone support
+    delta_timestamp TIMESTAMP WITH TIME ZONE,
     is_deleted         NUMBER(1,0) DEFAULT 0
 );
 

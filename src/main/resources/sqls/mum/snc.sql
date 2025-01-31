@@ -23,7 +23,8 @@ CREATE TABLE ECI_SNC_MUM
     circle             VARCHAR2(50) DEFAULT 'MUM',
     vendor             VARCHAR2(50) DEFAULT 'ECI',
     is_deleted         NUMBER(1,0) DEFAULT 0,
-    last_modified_date TIMESTAMP WITH TIME ZONE
+    last_modified_date TIMESTAMP WITH TIME ZONE,
+    delta_timestamp  TIMESTAMP WITH TIME ZONE
 );
 
 CREATE INDEX idx_ECI_SNC_MUM_snc_id ON ECI_SNC_MUM (snc_id);

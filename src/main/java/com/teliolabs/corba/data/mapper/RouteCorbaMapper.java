@@ -1,18 +1,19 @@
 package com.teliolabs.corba.data.mapper;
 
 
-import com.teliolabs.corba.TxCorbaDiscoveryApplication;
 import com.teliolabs.corba.application.ExecutionContext;
 import com.teliolabs.corba.data.dto.ManagedElement;
-import com.teliolabs.corba.utils.ManagedElementUtils;
-import org.tmforum.mtnm.managedElement.ManagedElement_T;
+import com.teliolabs.corba.data.dto.Route;
+import com.teliolabs.corba.data.dto.SNC;
+import com.teliolabs.corba.data.holder.ManagedElementHolder;
+import com.teliolabs.corba.data.holder.SNCHolder;
+import org.tmforum.mtnm.subnetworkConnection.CrossConnect_T;
 
 import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
-public class RouteCorbaMapper implements CorbaMapper<ManagedElement_T, ManagedElement> {
+public class RouteCorbaMapper implements CorbaMapper<CrossConnect_T, Route> {
 
 
     // Singleton instance
@@ -28,29 +29,19 @@ public class RouteCorbaMapper implements CorbaMapper<ManagedElement_T, ManagedEl
     }
 
     @Override
-    public ManagedElement mapFromCorba(ManagedElement_T input) {
+    public Route mapFromCorba(CrossConnect_T input) {
         ZonedDateTime executionTimestamp = ExecutionContext.getInstance().getExecutionTimestamp();
-        String meName = ManagedElementUtils.getMEName(input.name);
-        return ManagedElement.builder().
-                meName(meName).
-                productName(input.productName != null ? input.productName.trim() : null).
-                nativeEmsName(input.nativeEMSName != null ? input.nativeEMSName.trim() : null).
-                circle(ExecutionContext.getInstance().getCircle().getName()).
-                ipAddress(ManagedElementUtils.getIPAddress(meName, input.additionalInfo)).
-                location(input.location != null ? input.location.trim() : null).
-                userLabel(input.userLabel != null ? input.userLabel.trim() : null).
-                softwareVersion(input.version != null ? input.version.trim() : null).
-                lastModifiedDate(executionTimestamp).build();
+        Map<String, SNC> sncMap = SNCHolder.getInstance().getElements();
+        return null;
     }
 
     @Override
-    public Map<String, ManagedElement> toMap(List<ManagedElement> list) {
-        return list.parallelStream()
-                .collect(Collectors.toMap(ManagedElement::getMeName, obj -> obj));
+    public Map<String, Route> toMap(List<Route> list) {
+        return null;
     }
 
-    // A method to map a list of CORBA objects to DTOs
-    public List<ManagedElement> mapFromCorbaList(List<ManagedElement_T> elementTs) {
-        return elementTs.stream().map(this::mapFromCorba).collect(Collectors.toList());
+    @Override
+    public List<Route> mapFromCorbaList(List<CrossConnect_T> list) {
+        return null;
     }
 }

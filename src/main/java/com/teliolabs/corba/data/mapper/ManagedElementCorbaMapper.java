@@ -1,9 +1,9 @@
 package com.teliolabs.corba.data.mapper;
 
 
-import com.teliolabs.corba.TxCorbaDiscoveryApplication;
 import com.teliolabs.corba.application.ExecutionContext;
 import com.teliolabs.corba.data.dto.ManagedElement;
+import com.teliolabs.corba.data.types.CommunicationState;
 import com.teliolabs.corba.utils.ManagedElementUtils;
 import org.tmforum.mtnm.managedElement.ManagedElement_T;
 
@@ -33,6 +33,7 @@ public class ManagedElementCorbaMapper implements CorbaMapper<ManagedElement_T, 
         String meName = ManagedElementUtils.getMEName(input.name);
         return ManagedElement.builder().
                 meName(meName).
+                communicationState(CommunicationState.fromState(input.communicationState.value())).
                 productName(input.productName != null ? input.productName.trim() : null).
                 nativeEmsName(input.nativeEMSName != null ? input.nativeEMSName.trim() : null).
                 circle(ExecutionContext.getInstance().getCircle().getName()).

@@ -109,7 +109,8 @@ public class TxCorbaDiscoveryApplication {
         String circleName = cmdArgs.get(CommandLineArg.CIRCLE);
         String vendorName = cmdArgs.get(CommandLineArg.VENDOR);
         String timestamp = cmdArgs.get(CommandLineArg.TIMESTAMP);
-        String deltaDays = cmdArgs.get(CommandLineArg.DELTA_DAYS);
+        String deltaDays = cmdArgs.get(CommandLineArg.DELTA_DAYS_BEFORE);
+        log.info("deltaDays: {}", deltaDays);
         try {
             Circle circle = circleService.findByNameAndVendor(circleName, vendorName);
             log.debug("Found Circle: {}", circle);
@@ -123,6 +124,7 @@ public class TxCorbaDiscoveryApplication {
                 log.info("Shutdown hook called, closing any existing Corba connection.");
                 try {
                     CorbaConnection.getConnection(circle).close();
+                    log.info("Connection closed successfully from shutdown hook.");
                 } catch (Exception e) {
                     log.error("Error while closing any existing connection from shutdown hook");
                     System.exit(1);

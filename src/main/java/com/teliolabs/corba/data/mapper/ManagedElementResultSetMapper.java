@@ -3,6 +3,7 @@ package com.teliolabs.corba.data.mapper;
 
 import com.teliolabs.corba.data.domain.ManagedElementEntity;
 import com.teliolabs.corba.data.dto.ManagedElement;
+import com.teliolabs.corba.data.types.CommunicationState;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -34,6 +35,7 @@ public class ManagedElementResultSetMapper implements ResultSetMapper<ManagedEle
                 .ipAddress(resultSet.getString("ip_address"))
                 .softwareVersion(resultSet.getString("software_version"))
                 .location(resultSet.getString("location"))
+                .communicationState(CommunicationState.fromState(resultSet.getInt("communication_state")))
                 .circle(resultSet.getString("circle"))
                 .vendor(resultSet.getString("vendor"))
                 .isDeleted(resultSet.getInt("is_deleted") == 1)
@@ -54,6 +56,7 @@ public class ManagedElementResultSetMapper implements ResultSetMapper<ManagedEle
                 .ipAddress(resultSet.getString("ip_address"))
                 .softwareVersion(resultSet.getString("software_version"))
                 .location(resultSet.getString("location"))
+                .communicationState(CommunicationState.fromState(resultSet.getInt("communication_state")))
                 .circle(resultSet.getString("circle"))
                 .vendor(resultSet.getString("vendor"))
                 .isDeleted(resultSet.getInt("is_deleted") == 1)

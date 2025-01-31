@@ -21,4 +21,5 @@ public class Equipment {
 
     private boolean isDeleted;
     private ZonedDateTime lastModifiedDate;
+    private ZonedDateTime deltaTimestamp;
 }

@@ -87,7 +87,7 @@ public final class CorbaConnection implements AutoCloseable {
         if (eiManager == null) {
             managerInterface = new Common_IHolder();
             corbaSession.getEmsSession().getManager(EI_MANAGER_NAME, managerInterface);
-            this.eiManager = EquipmentInventoryMgr_IHelper.narrow(managerInterface.value);
+            eiManager = EquipmentInventoryMgr_IHelper.narrow(managerInterface.value);
         }
     }
 
@@ -101,7 +101,7 @@ public final class CorbaConnection implements AutoCloseable {
 
     public static CorbaConnection getConnection(Circle circle) throws Exception {
 
-        log.debug("Creating connection for Circle: {}", circle);
+        log.info("Creating connection for Circle: {}", circle);
         String[] orbArgs = {"-ORBInitRef", circle.getNameService().trim()};
         ORB orb = ORB.init(orbArgs, null);
         NamingContextExt nRef = NamingContextExtHelper.

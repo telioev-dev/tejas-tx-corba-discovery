@@ -5,10 +5,7 @@ import com.teliolabs.corba.data.exception.DataAccessException;
 import com.teliolabs.corba.data.mapper.ResultSetMapperFunction;
 import lombok.extern.log4j.Log4j2;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
+import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -16,6 +13,24 @@ import java.util.List;
 public abstract class GenericRepository<T> {
 
     protected abstract String getTableName();
+
+    public int truncate() {
+        String tableName = getTableName();
+        String sql = String.format("TRUNCATE TABLE %s", tableName);
+        int recordsDeleted = 0;
+        try (Connection connection = DataSourceConfig.getHikariDataSource().getConnection();
+             Statement stmt = connection.createStatement()) {
+
+            // Execute the TRUNCATE statement
+            recordsDeleted = stmt.executeUpdate(sql);
+
+            log.info("Table: {} truncated successfully", tableName);
+        } catch (SQLException e) {
+            log.error("Error truncating table: {}", tableName, e);
+            throw new DataAccessException("Error truncating table: " + tableName, e);
+        }
+        return recordsDeleted;
+    }
 
     protected abstract void setPreparedStatementParameters(PreparedStatement ps, T entity) throws SQLException;
 
@@ -38,16 +53,13 @@ public abstract class GenericRepository<T> {
         }
     }
 
-    public int insertEntities(List<T> entities, String deleteSQLTemplate, String insertSQLTemplate, int batchSize) throws SQLException {
+    public int insertEntities(List<T> entities, String insertSQLTemplate, int batchSize) throws SQLException {
         if (entities == null || entities.isEmpty()) {
             System.out.println("No entities to insert.");
             return 0;
         }
 
-        String deleteSQL = String.format(deleteSQLTemplate, getTableName());
         String insertSQL = String.format(insertSQLTemplate, getTableName());
-
-        log.debug("deleteSQL: {}", deleteSQL);
         log.debug("insertSQL: {}", insertSQL);
 
         int totalInserted = 0;
@@ -140,7 +152,7 @@ public abstract class GenericRepository<T> {
 //        return totalInserted;
 //    }
 
-    private int executeBatch(PreparedStatement ps, Connection connection) throws SQLException {
+    protected int executeBatch(PreparedStatement ps, Connection connection) throws SQLException {
         int[] batchResults = ps.executeBatch();
         connection.commit();
         ps.clearBatch();

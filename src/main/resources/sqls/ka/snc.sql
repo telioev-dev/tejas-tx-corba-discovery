@@ -21,7 +21,8 @@ CREATE TABLE ECI_SNC_KA
     circle             VARCHAR2(50) DEFAULT 'KA',
     vendor             VARCHAR2(50) DEFAULT 'ECI',
     is_deleted         NUMBER(1,0) DEFAULT 0,
-    last_modified_date TIMESTAMP
+    last_modified_date TIMESTAMP,
+    delta_timestamp  TIMESTAMP WITH TIME ZONE
 );
 
 CREATE INDEX idx_ECI_SNC_KA_snc_id ON ECI_SNC_KA (snc_id);
