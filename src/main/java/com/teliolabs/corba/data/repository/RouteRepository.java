@@ -46,8 +46,8 @@ public class RouteRepository extends GenericRepository<RouteEntity> {
         preparedStatement.setString(7, StringUtils.trimString(entity.getAEndCtp()));
         preparedStatement.setString(8, StringUtils.trimString(entity.getZEndCtp()));
         preparedStatement.setString(9, StringUtils.trimString(entity.getPathType().name()));
-        preparedStatement.setByte(10, entity.getTupleA());
-        preparedStatement.setByte(11, entity.getTupleB());
+        preparedStatement.setShort(10, entity.getTupleA());
+        preparedStatement.setShort(11, entity.getTupleB());
         preparedStatement.setString(12, entity.getTuple());
         preparedStatement.setTimestamp(13, Timestamp.from(ExecutionContext.getInstance().getExecutionTimestamp().toInstant()));
     }

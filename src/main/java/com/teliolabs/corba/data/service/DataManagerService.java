@@ -243,6 +243,11 @@ public class DataManagerService {
 
     }
 
+    public void discoverNia() throws SQLException {
+        NiaRepository niaRepository = NiaRepository.getInstance();
+        NiaService niaService = NiaService.getInstance(niaRepository);
+        niaService.publishNiaView(ExecutionContext.getInstance().getViewName());
+    }
 
     private CorbaConnection establishConnection() {
         try {

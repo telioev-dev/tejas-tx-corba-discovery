@@ -20,6 +20,7 @@ public class ExecutionContext {
     private JobEntity currentJob;
     private ZonedDateTime executionTimestamp;
     private String deltaTimestamp;
+    private String viewName;
     // Singleton instance
     private static final ExecutionContext INSTANCE = new ExecutionContext();
 

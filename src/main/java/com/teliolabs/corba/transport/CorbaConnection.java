@@ -1,6 +1,8 @@
 package com.teliolabs.corba.transport;
 
 import com.teliolabs.corba.data.dto.Circle;
+import com.teliolabs.corba.data.repository.PTPRepository;
+import com.teliolabs.corba.data.service.PTPService;
 import lombok.Getter;
 import lombok.extern.log4j.Log4j2;
 import org.omg.CORBA.ORB;
@@ -92,14 +94,25 @@ public final class CorbaConnection implements AutoCloseable {
     }
 
     // Singleton instance
-    private static final CorbaConnection INSTANCE = new CorbaConnection();
+    private static CorbaConnection INSTANCE = null;
 
     // Public method to get the instance
     private static CorbaConnection getInstance() {
+        if (INSTANCE == null) {
+            synchronized (PTPService.class) {
+                if (INSTANCE == null) {
+                    INSTANCE = new CorbaConnection();
+                    log.debug("PTPService instance created.");
+                }
+            }
+        }
         return INSTANCE;
     }
 
+
     public static CorbaConnection getConnection(Circle circle) throws Exception {
+
+        if (INSTANCE != null) return INSTANCE;
 
         log.info("Creating connection for Circle: {}", circle);
         String[] orbArgs = {"-ORBInitRef", circle.getNameService().trim()};
@@ -176,6 +189,7 @@ public final class CorbaConnection implements AutoCloseable {
         } catch (Exception e) {
             log.error("Error occurred while closing sessions or resources.", e);
         }
+        INSTANCE = null;
     }
 
     private void clearManagers() {

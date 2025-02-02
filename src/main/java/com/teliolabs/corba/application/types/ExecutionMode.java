@@ -4,7 +4,7 @@ import lombok.extern.log4j.Log4j2;
 
 @Log4j2
 public enum ExecutionMode {
-    DELTA("delta"), IMPORT("import"), STANDALONE("standalone");
+    DELTA("delta"), IMPORT("import"), STANDALONE("standalone"), NIA("nia"), SIA("sia");
 
     private final String value;
 

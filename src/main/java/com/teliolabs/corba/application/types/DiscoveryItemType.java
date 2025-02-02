@@ -7,6 +7,8 @@ public enum DiscoveryItemType {
     TOPOLOGY("topology"),
     ROUTE("route"),
     EQUIPMENT("equipment"),
+    NIA_VIEW("nia_view"),
+    SIA_VIEW("sia_view"),
     SNC("snc");
 
 

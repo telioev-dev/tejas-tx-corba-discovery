@@ -18,3 +18,11 @@ CREATE TABLE ECI_ME_MUM
 );
 
 CREATE INDEX idx_ECI_ME_MUM_native_ems_name ON ECI_ME_MUM(native_ems_name);
+
+ALTER TABLE ECI_ME_MUM add (
+    delta_timestamp timestamp with time zone
+);
+
+ALTER TABLE ECI_ME_MUM add (
+    communication_state           NUMBER(1,0)
+);

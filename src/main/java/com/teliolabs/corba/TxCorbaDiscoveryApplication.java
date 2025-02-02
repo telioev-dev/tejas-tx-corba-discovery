@@ -17,6 +17,7 @@ import com.teliolabs.corba.data.repository.CircleRepository;
 import com.teliolabs.corba.data.service.CircleService;
 import com.teliolabs.corba.runners.DeltaApplicationRunner;
 import com.teliolabs.corba.runners.ImportApplicationRunner;
+import com.teliolabs.corba.runners.NiaApplicationRunner;
 import com.teliolabs.corba.transport.CorbaConnection;
 import com.teliolabs.corba.utils.DateTimeUtils;
 import lombok.extern.log4j.Log4j2;
@@ -67,7 +68,7 @@ public class TxCorbaDiscoveryApplication {
 
     private static CommandLineParser parseAndValidateArguments(String[] args) {
         CommandLineParser cmdArgs = new CommandLineParser(args);
-        ArgumentValidator.validateArguments(cmdArgs, CommandLineArg.JOB, CommandLineArg.CIRCLE, CommandLineArg.VENDOR, CommandLineArg.TIMESTAMP);
+        ArgumentValidator.validateArguments(cmdArgs, CommandLineArg.JOB, CommandLineArg.CIRCLE, CommandLineArg.VENDOR);
         return cmdArgs;
     }
 
@@ -111,28 +112,21 @@ public class TxCorbaDiscoveryApplication {
         String timestamp = cmdArgs.get(CommandLineArg.TIMESTAMP);
         String deltaDays = cmdArgs.get(CommandLineArg.DELTA_DAYS_BEFORE);
         String entityId = cmdArgs.get(CommandLineArg.ENTITY_ID);
+        String jobValue = cmdArgs.get(CommandLineArg.JOB);
         log.info("deltaDays: {}", deltaDays);
         try {
+            ExecutionContext executionContext = ExecutionContext.getInstance();
+            if (ExecutionMode.NIA == ExecutionMode.fromValue(jobValue) || ExecutionMode.SIA == ExecutionMode.fromValue(jobValue)) {
+                executionContext.setViewName(cmdArgs.get(CommandLineArg.VIEW_NAME));
+                return executionContext;
+            }
+
             Circle circle = circleService.findByNameAndVendor(circleName, vendorName);
             log.debug("Found Circle: {}", circle);
-
-            ExecutionContext executionContext = ExecutionContext.getInstance();
             executionContext.setCircle(circle);
             executionContext.setExecutionTimestamp(ZonedDateTime.parse(timestamp));
             executionContext.setDeltaTimestamp(deltaDays == null ? null : DateTimeUtils.getDeltaTimestamp(Integer.parseInt(deltaDays)));
             executionContext.setEntityId(entityId);
-
-            Thread haltedHook = new Thread(() -> {
-                log.info("Shutdown hook called, closing any existing Corba connection.");
-                try {
-                    CorbaConnection.getConnection(circle).close();
-                    log.info("Connection closed successfully from shutdown hook.");
-                } catch (Exception e) {
-                    log.error("Error while closing any existing connection from shutdown hook");
-                    System.exit(1);
-                }
-            });
-            Runtime.getRuntime().addShutdownHook(haltedHook);
             return executionContext;
         } catch (IllegalArgumentException e) {
             log.error("Error finding Circle: ", e);
@@ -154,8 +148,12 @@ public class TxCorbaDiscoveryApplication {
                 executionContext.setEntity(DiscoveryItemType.fromValue(cmdArgs.get("entity")));
                 new DeltaApplicationRunner().run(cmdArgs.getArgs());
                 break;
+            case "nia":
+                executionContext.setExecutionMode(ExecutionMode.STANDALONE);
+                new NiaApplicationRunner().run(cmdArgs.getArgs());
+                break;
             default:
-                log.error("Invalid 'job' argument: '{}'. Please specify '--job=import' or '--job=delta'.", job);
+                log.error("Invalid 'job' argument: '{}'. Please specify '--job=import' or '--job=delta' or '--job=nia'.", job);
                 System.exit(1);
         }
     }

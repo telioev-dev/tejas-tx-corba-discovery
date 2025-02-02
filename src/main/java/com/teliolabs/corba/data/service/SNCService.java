@@ -10,6 +10,7 @@ import com.teliolabs.corba.data.mapper.SNCResultSetMapper;
 import com.teliolabs.corba.data.repository.SNCRepository;
 import com.teliolabs.corba.discovery.DiscoveryService;
 import com.teliolabs.corba.transport.CorbaConnection;
+import com.teliolabs.corba.transport.CorbaErrorHandler;
 import com.teliolabs.corba.utils.CollectionUtils;
 import com.teliolabs.corba.utils.CorbaConstants;
 import com.teliolabs.corba.utils.DateTimeUtils;
@@ -113,8 +114,6 @@ public class SNCService implements DiscoveryService {
             start = System.currentTimeMillis();
             corbaConnection.getMlsnManager().getAllSubnetworkConnections(ExecutionMode.DELTA == ExecutionContext.getInstance().getExecutionMode() ?
                     buildDeltaSearchCriteria(subnetwork) : subnetwork.name, rateList, HOW_MANY, subnetworkConnectionListTHolder, sncIteratorIHolder);
-            //Collections.addAll(subnetworkConnectionTList, sncList.value);
-            //List<SubnetworkConnection_T> tempList = Arrays.asList(subnetworkConnectionListTHolder.value);
             SubnetworkConnection_T[] subnetworkConnectionTs = subnetworkConnectionListTHolder.value;
             if (isExecutionModeImport()) {
                 saveSubnetworkConnections(subnetworkConnectionTs);
@@ -127,8 +126,8 @@ public class SNCService implements DiscoveryService {
             processSubnetworkConnections(subnetworkConnectionListTHolder, sncIteratorIHolder);
             end = System.currentTimeMillis();
             printDiscoveryResult(end - start);
-            //log.info("Network discovery on Subnetwork {} for total SNCs {} took {} seconds.", SNCUtils.getMultilayerSubnetworkName(subnetwork), discoveryCount, (end - start) / 1000);
-        } catch (Exception e) {
+        } catch (ProcessingFailureException e) {
+            CorbaErrorHandler.handleProcessingFailureException(e, "processSubnetwork: " + Arrays.toString(subnetwork.name));
             log.error("Failed to process subnetwork: {}", Arrays.toString(subnetwork.name), e);
             throw e;
         }

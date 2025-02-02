@@ -23,8 +23,8 @@ public class RouteEntity {
     private String zEndPtp;
     private String zEndCtp;
     private PathType pathType;
-    private byte tupleA;
-    private byte tupleB;
+    private short tupleA;
+    private short tupleB;
     private String tuple;
     private String circle;
     private String vendor;

@@ -34,9 +34,20 @@ public class ArgumentValidator {
             if (cmdArgs.get(CommandLineArg.ENTITY) == null) {
                 missingArgs.add(CommandLineArg.ENTITY.getKey());
             }
+            if (cmdArgs.get(CommandLineArg.TIMESTAMP) == null) {
+                missingArgs.add(CommandLineArg.TIMESTAMP.getKey());
+            }
+
         } else if (ExecutionMode.DELTA == ExecutionMode.fromValue(jobValue)) {
             if (cmdArgs.get(CommandLineArg.DELTA_DAYS_BEFORE) == null) {
                 missingArgs.add(CommandLineArg.DELTA_DAYS_BEFORE.getKey());
+            }
+            if (cmdArgs.get(CommandLineArg.TIMESTAMP) == null) {
+                missingArgs.add(CommandLineArg.TIMESTAMP.getKey());
+            }
+        } else if (ExecutionMode.NIA == ExecutionMode.fromValue(jobValue) || ExecutionMode.SIA == ExecutionMode.fromValue(jobValue)) {
+            if (cmdArgs.get(CommandLineArg.VIEW_NAME) == null) {
+                missingArgs.add(CommandLineArg.VIEW_NAME.getKey());
             }
         }
 

@@ -6,6 +6,7 @@ public enum CommandLineArg {
     ENTITY("entity"),
     ENTITY_ID("entity_id"),
     TIMESTAMP("timestamp"),
+    VIEW_NAME("view_name"),
     DELTA_DAYS_BEFORE("delta_days_before"),
     VENDOR("vendor");
 

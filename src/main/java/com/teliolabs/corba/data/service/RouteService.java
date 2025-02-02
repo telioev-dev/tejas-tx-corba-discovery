@@ -103,6 +103,8 @@ public class RouteService implements DiscoveryService {
                         end = System.currentTimeMillis();
                         printDiscoveryResult(end - start);
                         throw e;
+                    } catch (Exception e) {
+
                     }
                 }
             }
@@ -124,20 +126,22 @@ public class RouteService implements DiscoveryService {
         }
         discoveryCount = discoveryCount + routeHolder.value.length;
         log.info("getRoute: got " + routeHolder.value.length + " Cross-connects for SNC " + sncId);
-        log.info("getRoute: total Cross-connects {}", discoveryCount);
         List<RouteEntity> routeEntities = new ArrayList<>();
         int i = 1;
         for (CrossConnect_T crossConnect : routeHolder.value) {
-            log.info("Processing Cross Connect ({}) details for SNC: {}", i, sncId);
+            if (log.isDebugEnabled()) {
+                logCrossConnectDetails(crossConnect);
+            }
             routeEntities.addAll(processCrossConnect(crossConnect, snc));
             i++;
         }
 
         if (!routeEntities.isEmpty()) {
-            log.info("Routes count {} to be inserted for SNC : {}", routeEntities.size(), sncId);
+            log.debug("Routes count {} to be inserted for SNC : {}", routeEntities.size(), sncId);
             routeRepository.insertRoutes(routeEntities, 50);
-            log.info("Total routes {} inserted in DB for SNC: {}", routeEntities.size(), sncId);
+            log.debug("Total routes {} inserted in DB for SNC: {}", routeEntities.size(), sncId);
         }
+        log.info("Cross-Connect processing done for SNC: {}", sncId);
     }
 
     private List<RouteEntity> processCrossConnect(CrossConnect_T crossConnectT, SNC snc) throws SQLException {
@@ -179,6 +183,7 @@ public class RouteService implements DiscoveryService {
                         pathType(additionalInfo.getPathType()).tuple(additionalInfo.getTuple()).
                         tupleA(additionalInfo.getTupleA()).
                         tupleB(additionalInfo.getTupleB()).build();
+                log.debug("Route: {}", routeEntity);
                 routeEntities.add(routeEntity);
             }
         } else if (aEndList.isEmpty() && !zEndList.isEmpty()) {
@@ -194,6 +199,7 @@ public class RouteService implements DiscoveryService {
                         pathType(additionalInfo.getPathType()).
                         tupleA(additionalInfo.getTupleA()).tuple(additionalInfo.getTuple()).
                         tupleB(additionalInfo.getTupleB()).build();
+                log.debug("Route: {}", routeEntity);
                 routeEntities.add(routeEntity);
             }
         } else if (!aEndList.isEmpty() && zEndList.isEmpty()) {
@@ -209,6 +215,7 @@ public class RouteService implements DiscoveryService {
                         pathType(additionalInfo.getPathType()).
                         tupleA(additionalInfo.getTupleA()).tuple(additionalInfo.getTuple()).
                         tupleB(additionalInfo.getTupleB()).build();
+                log.debug("Route: {}", routeEntity);
                 routeEntities.add(routeEntity);
             }
         }
@@ -234,12 +241,12 @@ public class RouteService implements DiscoveryService {
     }
 
     private void logCrossConnectDetails(CrossConnect_T crossConnectT) {
-        log.info("Active: {}", crossConnectT.active);
-        log.info("CC Type: {}", crossConnectT.ccType.value());
-        log.info("Direction: {}", crossConnectT.direction.value());
-        log.info("CC Additional Info Size: {}", crossConnectT.additionalInfo.length);
-        log.info("CC aEndNameList Size: {}", crossConnectT.aEndNameList.length);
-        log.info("CC zEndNameList Size: {}", crossConnectT.zEndNameList.length);
+        log.debug("Active: {}", crossConnectT.active);
+        log.debug("CC Type: {}", crossConnectT.ccType.value());
+        log.debug("Direction: {}", crossConnectT.direction.value());
+        log.debug("CC Additional Info Size: {}", crossConnectT.additionalInfo.length);
+        log.debug("CC aEndNameList Size: {}", crossConnectT.aEndNameList.length);
+        log.debug("CC zEndNameList Size: {}", crossConnectT.zEndNameList.length);
         Arrays.stream(crossConnectT.additionalInfo).filter(nameAndStringValueT ->
                 nameAndStringValueT.name.equals("OrderNumber") || nameAndStringValueT.name.equals("PathType")).forEach(attr -> {
             if (attr.name.equals("PathType")) {
