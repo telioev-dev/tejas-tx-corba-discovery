@@ -11,6 +11,8 @@ public final class TopologyQueries {
 
     public static final String SOFT_DELETE_SQL = "UPDATE %s SET is_deleted = 1 WHERE tp_link_name IN ";
 
+    public static final String HARD_DELETE_SQL = "DELETE FROM %s WHERE tp_link_name IN ";
+
 
     public static final String INSERT_SQL = "INSERT INTO %s (" +
             "tp_link_name, native_ems_name, rate, link_type, direction, " +

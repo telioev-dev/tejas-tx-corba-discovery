@@ -12,6 +12,8 @@ public final class EquipmentQueries {
 
     public static final String SOFT_DELETE_SQL = "UPDATE %s SET is_deleted = 1, delta_timestamp = ? WHERE me_name = ? AND location = ?";
 
+    public static final String HARD_DELETE_SQL = "DELETE FROM WHERE me_name = ? AND location = ?";
+
     public static final String INSERT_SQL = "INSERT INTO %s " +
             "(me_name, me_label, user_label, software_version, serial_number, " +
             "expected_equipment, installed_equipment, location, last_modified_date) " +

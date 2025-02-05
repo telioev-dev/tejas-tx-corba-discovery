@@ -46,6 +46,7 @@ public class PTPService implements DiscoveryService {
     private short[] tpLayerRateList = new short[0];
     private short[] connectionLayerRateList = new short[0];
     private NameAndStringValue_T[] neNameArray;
+    private List<String> deltaFailedManagedElements = null;
     private Integer discoveryCount = 0;
     private long start;
     private long end;
@@ -73,6 +74,7 @@ public class PTPService implements DiscoveryService {
             neNameArray[1] = new NameAndStringValue_T();
             neNameArray[1].name = CorbaConstants.MANAGED_ELEMENT_STR;
             if (isDelta) {
+                deltaFailedManagedElements = new ArrayList<>();
                 neNameArray[2] = new NameAndStringValue_T(CorbaConstants.TIMESTAMP_SIGNATURE_STR, ExecutionContext.getInstance().getDeltaTimestamp());
             }
         }
@@ -210,15 +212,6 @@ public class PTPService implements DiscoveryService {
         }
 
         log.debug("Total PTPs fetched from NMS: {}", discoveryCount);
-
-        // TODO: Remove this later after testing.. no longer need after we switched to save then and there
-//        if (terminationPoints != null && !terminationPoints.isEmpty() && ExecutionMode.IMPORT == executionMode) {
-//            try {
-//                saveTerminationPoints();
-//            } catch (SQLException e) {
-//                throw new RuntimeException(e);
-//            }
-//        }
     }
 
     private void saveTerminationPoints() throws SQLException {
@@ -240,49 +233,6 @@ public class PTPService implements DiscoveryService {
         log.debug("Successfully saved {} Termination Points in {} seconds.", terminationPoints.size(), (end - start) / 1000);
         terminationPoints = null;
     }
-
-    public void discoverTerminationPointsSync(CorbaConnection corbaConnection, ExecutionMode executionMode) throws Exception {
-        meManager = corbaConnection.getMeManager();
-        ManagedElementRepository managedElementRepository = ManagedElementRepository.getInstance();
-        managedElementService = ManagedElementService.getInstance(managedElementRepository);
-        List<ManagedElement_T> managedElements = managedElementService.getManagedElements();
-        if (managedElements == null || managedElements.isEmpty()) {
-            log.info("ME discovery was not found to be run or failed, hence initiating again for PTPs");
-            managedElements = ManagedElementService.getInstance().discover(corbaConnection, executionMode);
-        } else {
-            log.info("Discovered MEs found for PTP discovery, using them.");
-        }
-
-        if (managedElements != null && !managedElements.isEmpty()) {
-            int size = managedElements.size();
-            log.info("Total MEs for PTP processing:  {}", size);
-            for (int i = 0; i < size; i++) { // TODO
-                final ManagedElement_T managedElementT = managedElements.get(i);
-                final String meName = ManagedElementUtils.getMEName(managedElementT.name);
-                log.info("#{} ME '{}' for PTP processing.", i + 1, meName);
-                try {
-                    processManagedElementStack(meName);
-                } catch (ProcessingFailureException e) {
-                    log.error("Error occurred during network calls for PTPs");
-                    e.printStackTrace();
-                } catch (Exception e) {
-                    log.error("Error occurred during network calls for PTPs");
-                    e.printStackTrace();
-                }
-            }
-        }
-
-        log.debug("Total PTPs fetched from NMS: {}", terminationPoints.size());
-
-        if (terminationPoints != null && !terminationPoints.isEmpty() && ExecutionMode.IMPORT == executionMode) {
-            try {
-                saveTerminationPoints();
-            } catch (SQLException e) {
-                throw new RuntimeException(e);
-            }
-        }
-    }
-
 
     private void processManagedElementStack(String meName) throws ProcessingFailureException, SQLException {
         neNameArray[1].value = meName;
@@ -320,61 +270,6 @@ public class PTPService implements DiscoveryService {
             processDelta(terminationPointTs);
         }
         neNameArray[1].value = null;
-    }
-
-    private void processManagedElementSync(String meName) throws ProcessingFailureException {
-        neNameArray[1].value = meName;
-        int batchSize = ExecutionContext.getInstance().getCircle().getPtpHowMuch();
-        meManager.getAllPTPs(neNameArray, tpLayerRateList, connectionLayerRateList, batchSize, terminationPointList, terminationPointIterator);
-        log.debug("getAllPTPs: got {} PTP for ME {}.", terminationPointList.value.length, neNameArray[1].value);
-        Collections.addAll(terminationPoints, terminationPointList.value);
-        if (terminationPointIterator.value != null) {
-            boolean exitWhile = false;
-            try {
-                boolean hasMoreData = true;
-                while (hasMoreData) {
-                    hasMoreData = terminationPointIterator.value.next_n(batchSize, terminationPointList);
-                    Collections.addAll(terminationPoints, terminationPointList.value);
-                }
-                exitWhile = true;
-            } finally {
-                if (!exitWhile) {
-                    terminationPointIterator.value.destroy();
-                }
-            }
-
-        }
-        log.debug("getAllPTPs: total PTPs so far {}.", terminationPoints.size());
-        clearArrayAndIterator(terminationPointList, terminationPointIterator);
-    }
-
-    private void processManagedElement(ManagedElement_T managedElement) throws ProcessingFailureException {
-        NameAndStringValue_T[] neNameArray = buildPTPSearchCriteria(managedElement);
-        log.info("Thread: {} Processing ME '{}' for PTP discovery", Thread.currentThread().getName(), neNameArray[1].value);
-        int batchSize = ExecutionContext.getInstance().getCircle().getPtpHowMuch();
-        TerminationPointList_THolder terminationPointList = new TerminationPointList_THolder();
-        TerminationPointIterator_IHolder terminationPointIterator = new TerminationPointIterator_IHolder();
-        meManager.getAllPTPs(neNameArray, tpLayerRateList, connectionLayerRateList, batchSize, terminationPointList, terminationPointIterator);
-        log.info("getAllPTPs: got {} PTP for ME {}.", terminationPointList.value.length, neNameArray[1].value);
-        Collections.addAll(terminationPointsSync, terminationPointList.value);
-        if (terminationPointIterator.value != null) {
-            boolean exitWhile = false;
-            try {
-                boolean hasMoreData = true;
-                while (hasMoreData) {
-                    hasMoreData = terminationPointIterator.value.next_n(batchSize, terminationPointList);
-                    Collections.addAll(terminationPointsSync, terminationPointList.value);
-                }
-                exitWhile = true;
-            } finally {
-                if (!exitWhile) {
-                    terminationPointIterator.value.destroy();
-                }
-            }
-
-        }
-        log.info("getAllPTPs: total PTPs so far {}.", terminationPointsSync.size());
-        clearArrayAndIterator(terminationPointList, terminationPointIterator);
     }
 
     private void logTerminationPointDetails(TerminationPoint_T terminationPoint) {

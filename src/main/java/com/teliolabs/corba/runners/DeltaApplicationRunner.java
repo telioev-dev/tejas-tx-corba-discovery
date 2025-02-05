@@ -48,6 +48,8 @@ public class DeltaApplicationRunner implements ApplicationRunner {
             dataManagerService.discoverRoutes(DiscoverySource.NMS, ExecutionMode.DELTA);
         } else if (DiscoveryItemType.ALL == discoveryItemType) {
             //dataManagerService.startFullDiscovery();
+        } else if (DiscoveryItemType.NIA_VIEW == discoveryItemType) {
+            dataManagerService.discoverNia();
         }
     }
 }

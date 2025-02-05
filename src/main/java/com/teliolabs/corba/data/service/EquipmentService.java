@@ -34,6 +34,7 @@ public class EquipmentService implements DiscoveryService {
     private EquipmentInventoryMgr_I eiManager;
     private List<EquipmentOrHolder_T> equipmentOrHolderTList = new ArrayList<>();
     private Integer discoveryCount = 0;
+    private List<String> deltaFailedManagedElements = null;
     private long start;
     private long end;
 
@@ -62,10 +63,10 @@ public class EquipmentService implements DiscoveryService {
         neNameArray[1].name = CorbaConstants.MANAGED_ELEMENT_STR;
 
         if (isDelta) {
+            deltaFailedManagedElements = new ArrayList<>();
             neNameArray[2] = new NameAndStringValue_T(CorbaConstants.TIMESTAMP_SIGNATURE_STR, ExecutionContext.getInstance().getDeltaTimestamp());
         }
     }
-
 
     public void runDeltaProcess() throws SQLException, ProcessingFailureException {
         discoverEquipments();
@@ -117,6 +118,7 @@ public class EquipmentService implements DiscoveryService {
                 } catch (ProcessingFailureException e) {
                     CorbaErrorHandler.handleProcessingFailureException(e, "getAllEquipment, ManagedElement: " + meName);
                     if (e.errorReason.equals("EventLost") || e.errorReason.contains("ENTITY_NOT_FOUND")) {
+                        deltaFailedManagedElements.add(meName);
                         log.error("getAllEquipment: '{}' failed with reason: {}, continuing with next ManagedElement", meName, e.errorReason);
                         continue;
                     }
@@ -124,6 +126,10 @@ public class EquipmentService implements DiscoveryService {
                 } catch (SQLException e) {
                     throw e;
                 }
+            }
+
+            if (isExecutionModeDelta() && (deltaFailedManagedElements != null && !deltaFailedManagedElements.isEmpty())) {
+                // Run fullDiscovery on such MEs
             }
             end = System.currentTimeMillis();
             printDiscoveryResult(end - start);

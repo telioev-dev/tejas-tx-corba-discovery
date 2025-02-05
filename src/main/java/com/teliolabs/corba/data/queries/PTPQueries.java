@@ -11,6 +11,8 @@ public final class PTPQueries {
 
     public static final String SOFT_DELETE_SQL = "UPDATE %s SET is_deleted = 1 WHERE me_name = ? AND ptp_id = ?";
 
+    public static final String HARD_DELETE_SQL = "DELETE FROM %s WHERE me_name = ? AND ptp_id = ?";
+
 
     public static final String INSERT_PTP_SQL =
             "INSERT INTO %s (" +

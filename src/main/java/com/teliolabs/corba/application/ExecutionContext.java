@@ -1,6 +1,7 @@
 package com.teliolabs.corba.application;
 
 import com.teliolabs.corba.application.domain.JobEntity;
+import com.teliolabs.corba.application.types.DbProfile;
 import com.teliolabs.corba.application.types.DiscoveryItemType;
 import com.teliolabs.corba.application.types.ExecutionMode;
 import com.teliolabs.corba.data.dto.Circle;
@@ -21,6 +22,7 @@ public class ExecutionContext {
     private ZonedDateTime executionTimestamp;
     private String deltaTimestamp;
     private String viewName;
+    private DbProfile dbProfile;
     // Singleton instance
     private static final ExecutionContext INSTANCE = new ExecutionContext();
 

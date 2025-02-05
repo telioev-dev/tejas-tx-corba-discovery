@@ -12,6 +12,8 @@ public class SNCQueries {
 
     public static final String SOFT_DELETE_SQL = "UPDATE %s SET is_deleted = 1 WHERE snc_id IN ";
 
+    public static final String HARD_DELETE_SQL = "DELETE FROM %s WHERE snc_id IN ";
+
     public static final String INSERT_SQL = "INSERT INTO %s (" +
             "snc_id, snc_name, circuit_id, srf_id, snc_rate, v_cat, " +
             "a_end_me, a_end_me_label, a_end_ptp, a_end_ptp_label, a_end_channel, " +

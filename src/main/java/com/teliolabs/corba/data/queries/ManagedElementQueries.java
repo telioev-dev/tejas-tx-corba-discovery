@@ -12,6 +12,8 @@ public final class ManagedElementQueries {
 
     public static final String SOFT_DELETE_SQL = "UPDATE %s SET is_deleted = 1 WHERE me_name IN ";
 
+    public static final String HARD_DELETE_SQL = "DELETE FROM %s WHERE me_name IN ";
+
     public static final String INSERT_SQL = "INSERT INTO %s (native_ems_name, me_name, user_label, product_name, " +
             "ip_address, software_version, location, communication_state, circle, last_modified_date) " +
             "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";

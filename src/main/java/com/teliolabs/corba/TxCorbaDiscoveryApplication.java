@@ -4,8 +4,10 @@ package com.teliolabs.corba;
 import com.teliolabs.corba.application.ExecutionContext;
 import com.teliolabs.corba.application.JobInitializer;
 import com.teliolabs.corba.application.domain.JobEntity;
+import com.teliolabs.corba.application.metadata.TableManager;
 import com.teliolabs.corba.application.repository.JobRepository;
 import com.teliolabs.corba.application.service.JobService;
+import com.teliolabs.corba.application.types.DbProfile;
 import com.teliolabs.corba.application.types.DiscoveryItemType;
 import com.teliolabs.corba.application.types.ExecutionMode;
 import com.teliolabs.corba.application.types.JobState;
@@ -68,7 +70,7 @@ public class TxCorbaDiscoveryApplication {
 
     private static CommandLineParser parseAndValidateArguments(String[] args) {
         CommandLineParser cmdArgs = new CommandLineParser(args);
-        ArgumentValidator.validateArguments(cmdArgs, CommandLineArg.JOB, CommandLineArg.CIRCLE, CommandLineArg.VENDOR);
+        ArgumentValidator.validateArguments(cmdArgs, CommandLineArg.JOB, CommandLineArg.CIRCLE, CommandLineArg.VENDOR, CommandLineArg.DB_PROFILE);
         return cmdArgs;
     }
 
@@ -113,6 +115,7 @@ public class TxCorbaDiscoveryApplication {
         String deltaDays = cmdArgs.get(CommandLineArg.DELTA_DAYS_BEFORE);
         String entityId = cmdArgs.get(CommandLineArg.ENTITY_ID);
         String jobValue = cmdArgs.get(CommandLineArg.JOB);
+        String dbProfile = cmdArgs.get(CommandLineArg.DB_PROFILE);
         log.info("deltaDays: {}", deltaDays);
         try {
             ExecutionContext executionContext = ExecutionContext.getInstance();
@@ -124,6 +127,7 @@ public class TxCorbaDiscoveryApplication {
             Circle circle = circleService.findByNameAndVendor(circleName, vendorName);
             log.debug("Found Circle: {}", circle);
             executionContext.setCircle(circle);
+            executionContext.setDbProfile(DbProfile.fromName(dbProfile));
             executionContext.setExecutionTimestamp(ZonedDateTime.parse(timestamp));
             executionContext.setDeltaTimestamp(deltaDays == null ? null : DateTimeUtils.getDeltaTimestamp(Integer.parseInt(deltaDays)));
             executionContext.setEntityId(entityId);
@@ -136,7 +140,13 @@ public class TxCorbaDiscoveryApplication {
     }
 
     private static void executeRunner(String job, CommandLineParser cmdArgs, ExecutionContext executionContext) throws Exception {
-        log.info("executeRunner called...");
+        String entity = cmdArgs.get(CommandLineArg.ENTITY);
+        String circle = cmdArgs.get(CommandLineArg.CIRCLE);
+
+        // Call TableManager to generate tables for the specified entity
+        log.info("Generating tables for entity: {} in circle: {}", entity, circle);
+        TableManager tableManager = TableManager.getInstance();
+        tableManager.createTableForEntity(circle, entity);
         switch (job.toLowerCase()) {
             case "import":
                 executionContext.setExecutionMode(ExecutionMode.IMPORT);

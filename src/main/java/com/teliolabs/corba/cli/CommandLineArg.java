@@ -8,6 +8,7 @@ public enum CommandLineArg {
     TIMESTAMP("timestamp"),
     VIEW_NAME("view_name"),
     DELTA_DAYS_BEFORE("delta_days_before"),
+    DB_PROFILE("db_profile"),
     VENDOR("vendor");
 
     private final String key;
