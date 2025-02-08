@@ -59,16 +59,12 @@ public class RouteService implements DiscoveryService {
     private RouteService(RouteRepository routeRepository) {
         this.routeRepository = routeRepository;
         DiscoveryItemType discoveryItemType = ExecutionContext.getInstance().getEntity();
-        if (DiscoveryItemType.ROUTE == discoveryItemType) {
-            boolean isDelta = isExecutionModeDelta();
-            sncNameArray = new NameAndStringValue_T[isDelta ? 4 : 3];
+        if (DiscoveryItemType.ROUTE == discoveryItemType || DiscoveryItemType.SNC == discoveryItemType) {
+            sncNameArray = new NameAndStringValue_T[3];
             sncNameArray[0] = new NameAndStringValue_T(CorbaConstants.EMS_STR, ExecutionContext.getInstance().getCircle().getEms().replace(":", "/"));
             sncNameArray[1] = new NameAndStringValue_T(CorbaConstants.MULTILAYER_SUBNETWORK_STR, "0001");
             sncNameArray[2] = new NameAndStringValue_T();
             sncNameArray[2].name = CorbaConstants.SUBNETWORK_CONNECTION_STR;
-            if (isDelta) {
-                sncNameArray[3] = new NameAndStringValue_T(CorbaConstants.TIMESTAMP_SIGNATURE_STR, ExecutionContext.getInstance().getDeltaTimestamp());
-            }
         }
     }
 
@@ -77,6 +73,7 @@ public class RouteService implements DiscoveryService {
         Map<String, SNC> subnetworkConnectionsMap = SNCHolder.getInstance().getElements();
         start = System.currentTimeMillis();
         if (subnetworkConnectionsMap != null && !subnetworkConnectionsMap.isEmpty()) {
+            log.info("SNCs to run getRoute for: - {}", subnetworkConnectionsMap.size());
             Set<String> sncIds = subnetworkConnectionsMap.keySet();
             String entityId = ExecutionContext.getInstance().getEntityId();
             if (entityId != null && !entityId.isEmpty()) {

@@ -2,7 +2,6 @@ package com.teliolabs.corba.cli;
 
 import com.teliolabs.corba.application.types.DiscoveryItemType;
 import com.teliolabs.corba.application.types.ExecutionMode;
-import com.teliolabs.corba.exception.InvalidArgumentException;
 import lombok.extern.log4j.Log4j2;
 
 import java.util.ArrayList;
@@ -31,23 +30,19 @@ public class ArgumentValidator {
         // Conditional validation: If `job` is "import", then `entity` is mandatory
         String jobValue = cmdArgs.get(CommandLineArg.JOB);
         if (ExecutionMode.IMPORT == ExecutionMode.fromValue(jobValue)) {
-            if (cmdArgs.get(CommandLineArg.ENTITY) == null) {
-                missingArgs.add(CommandLineArg.ENTITY.getKey());
-            }
+            validateCommonParams(cmdArgs, missingArgs);
             if (cmdArgs.get(CommandLineArg.TIMESTAMP) == null) {
                 missingArgs.add(CommandLineArg.TIMESTAMP.getKey());
             }
 
+
         } else if (ExecutionMode.DELTA == ExecutionMode.fromValue(jobValue)) {
+            validateCommonParams(cmdArgs, missingArgs);
             if (cmdArgs.get(CommandLineArg.DELTA_DAYS_BEFORE) == null) {
                 missingArgs.add(CommandLineArg.DELTA_DAYS_BEFORE.getKey());
             }
             if (cmdArgs.get(CommandLineArg.TIMESTAMP) == null) {
                 missingArgs.add(CommandLineArg.TIMESTAMP.getKey());
-            }
-        } else if (ExecutionMode.NIA == ExecutionMode.fromValue(jobValue) || ExecutionMode.SIA == ExecutionMode.fromValue(jobValue)) {
-            if (cmdArgs.get(CommandLineArg.VIEW_NAME) == null) {
-                missingArgs.add(CommandLineArg.VIEW_NAME.getKey());
             }
         }
 
@@ -58,6 +53,16 @@ public class ArgumentValidator {
         String entity = cmdArgs.get(CommandLineArg.ENTITY);
         if (DiscoveryItemType.fromValue(entity) == null) {
             System.exit(2);
+        }
+    }
+
+    private static void validateCommonParams(CommandLineParser cmdArgs, List<String> missingArgs) {
+        if (cmdArgs.get(CommandLineArg.ENTITY) == null) {
+            missingArgs.add(CommandLineArg.ENTITY.getKey());
+        } else if (DiscoveryItemType.NIA_VIEW == DiscoveryItemType.fromValue(cmdArgs.get(CommandLineArg.ENTITY))) {
+            if (cmdArgs.get(CommandLineArg.VIEW_NAME) == null) {
+                missingArgs.add(CommandLineArg.VIEW_NAME.getKey());
+            }
         }
     }
 }

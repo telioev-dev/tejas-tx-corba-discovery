@@ -32,8 +32,8 @@ SELECT a.snc_id                 AS trail_id,
            WHEN sn.A_END_ME LIKE '%UME%'
                THEN
                (SELECT NVL(p.ME_LABEL, 'N/F')
-                FROM % r
-                         LEFT JOIN % p
+                FROM eci_route_ka r
+                         LEFT JOIN eci_ptp_ka p
                                    ON r.Z_END_ME = p.ME_NAME
                                        AND r.Z_END_PTP = p.ptp_id
                 WHERE r.snc_id = a.snc_id
@@ -43,7 +43,7 @@ SELECT a.snc_id                 AS trail_id,
                   AND r.Z_END_ME NOT LIKE '%UME%'
                   AND r.TUPLE_B =
                       (SELECT (MAX(TO_NUMBER(TUPLE_B)))
-                       FROM %
+                       FROM eci_route_ka
                        WHERE snc_id = a.snc_id
                          AND path_type = 'MAIN'
                          AND TUPLE_A = '1'
@@ -60,8 +60,8 @@ SELECT a.snc_id                 AS trail_id,
            WHEN sn.Z_END_ME LIKE '%UME%'
                THEN
                (SELECT NVL(p.ME_LABEL, 'N/F')
-                FROM % r
-                         LEFT JOIN % p
+                FROM eci_route_ka r
+                         LEFT JOIN eci_ptp_ka p
                                    ON r.Z_END_ME = p.ME_NAME
                                        AND r.Z_END_PTP = p.ptp_id
                 WHERE r.snc_id = a.snc_id
@@ -71,7 +71,7 @@ SELECT a.snc_id                 AS trail_id,
                   AND r.Z_END_ME NOT LIKE '%UME%'
                   AND r.TUPLE_B =
                       (SELECT (MIN(TO_NUMBER(TUPLE_B)))
-                       FROM %
+                       FROM eci_route_ka
                        WHERE snc_id = a.snc_id
                          AND path_type = 'MAIN'
                          AND TUPLE_A = '1'
@@ -88,8 +88,8 @@ SELECT a.snc_id                 AS trail_id,
            WHEN sn.A_END_ME LIKE '%UME%'
                THEN
                (SELECT p.port_native_name || '#' || p.ptp_id
-                FROM % r
-                         LEFT JOIN % p
+                FROM eci_route_ka r
+                         LEFT JOIN eci_ptp_ka p
                                    ON r.Z_END_ME = p.ME_NAME
                                        AND r.Z_END_PTP = p.ptp_id
                 WHERE r.snc_id = a.snc_id
@@ -99,7 +99,7 @@ SELECT a.snc_id                 AS trail_id,
                   AND r.Z_END_ME NOT LIKE '%UME%'
                   AND r.TUPLE_B =
                       (SELECT (MAX(TO_NUMBER(TUPLE_B)))
-                       FROM %
+                       FROM eci_route_ka
                        WHERE snc_id = a.snc_id
                          AND path_type = 'MAIN'
                          AND TUPLE_A = '1'
@@ -116,8 +116,8 @@ SELECT a.snc_id                 AS trail_id,
            WHEN sn.Z_END_ME LIKE '%UME%'
                THEN
                (SELECT p.port_native_name || '#' || p.ptp_id
-                FROM % r
-                         LEFT JOIN % p
+                FROM eci_route_ka r
+                         LEFT JOIN eci_ptp_ka p
                                    ON r.Z_END_ME = p.ME_NAME
                                        AND r.Z_END_PTP = p.ptp_id
                 WHERE r.snc_id = a.snc_id
@@ -127,7 +127,7 @@ SELECT a.snc_id                 AS trail_id,
                   AND r.Z_END_ME NOT LIKE '%UME%'
                   AND r.TUPLE_B =
                       (SELECT (MIN(TO_NUMBER(TUPLE_B)))
-                       FROM %
+                       FROM eci_route_ka
                        WHERE snc_id = a.snc_id
                          AND path_type = 'MAIN'
                          AND TUPLE_A = '1'
@@ -180,10 +180,10 @@ FROM (SELECT *
                    r1.tuple_b             bval,
                    r1.tuple_a             aval,
                    r1.path_type
-            FROM % r1,
-                 % r2,
-                 % p1,
-                 % p2
+            FROM eci_route_ka r1,
+                 eci_route_ka r2,
+                 eci_ptp_ka p1,
+                 eci_ptp_ka p2
             WHERE r1.snc_id = r2.snc_id
               AND r1.tuple_a = '1'
               AND r2.tuple_a = '1'
@@ -212,10 +212,10 @@ FROM (SELECT *
                    r1.tuple_b             bval,
                    r1.tuple_a             aval,
                    r1.path_type
-            FROM % r1,
-                 % r2,
-                 % p1,
-                 % p2
+            FROM eci_route_ka r1,
+                 eci_route_ka r2,
+                 eci_ptp_ka p1,
+                 eci_ptp_ka p2
             WHERE r1.snc_id = r2.snc_id
               AND r1.tuple_a = '2'
               AND r2.tuple_a = '2'
@@ -229,8 +229,8 @@ FROM (SELECT *
               AND r1.z_end_ptp = p2.ptp_id) k
       ORDER BY k.path_type,
                TO_NUMBER(k.bval) DESC) a,
-     % t,
-     % sn
+     eci_topology_ka t,
+     eci_snc_ka sn
 WHERE ((t.A_END_ME_NAME = a.A_END_ME
     AND t.A_END_PORT_NAME = a.A_END_PTP
     AND t.Z_END_ME_NAME = a.Z_END_ME

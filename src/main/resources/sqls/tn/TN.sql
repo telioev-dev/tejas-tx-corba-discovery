@@ -98,6 +98,7 @@ CREATE TABLE ECI_TOPOLOGY_TN
     ring_name          VARCHAR2(300),
     inconsistent       VARCHAR2(50),
     technology_layer   VARCHAR2(50),
+    topology_type      VARCHAR2(10),
     circle             VARCHAR2(50) DEFAULT 'TN',
     vendor             VARCHAR2(50) DEFAULT 'ECI',
     last_modified_date TIMESTAMP WITH TIME ZONE,

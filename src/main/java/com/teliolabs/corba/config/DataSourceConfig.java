@@ -26,6 +26,7 @@ public class DataSourceConfig {
             synchronized (DataSourceConfig.class) {
                 if (hikariDataSource == null) {
                     DbProfile dbProfile = ExecutionContext.getInstance().getDbProfile();
+                    log.info("dbProfile: {}", dbProfile);
                     HikariConfig hikariConfig = getHikariConfig(dbProfile.name());
 
                     // Additional configurations if needed

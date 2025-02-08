@@ -1,0 +1,86 @@
+#!/bin/bash
+
+APP_JAR="$ECI_STITCHING_HOME"/bin/tx-corba-discovery.jar
+LOG_DIR="$ECI_STITCHING_HOME"/logs
+
+# Validate and parse arguments
+for arg in "$@"; do
+  case $arg in
+    --job=*)
+      JOB="${arg#*=}"
+      ;;
+    --circle=*)
+      CIRCLE="${arg#*=}"
+      ;;
+    --vendor=*)
+      VENDOR="${arg#*=}"
+      ;;
+    --entity=*)
+      ENTITY="${arg#*=}"
+      ;;
+    --timestamp=*)
+      TIMESTAMP="${arg#*=}"
+      ;;
+    --db_profile=*)
+      DB_PROFILE="${arg#*=}"
+      ;;
+    --delta_days_before=*)
+      DELTA_DAYS="${arg#*=}"
+      ;;
+    --view_name=*)
+      VIEW_NAME="${arg#*=}"
+      ;;
+    *)
+      echo "Unknown argument: $arg"
+      exit 1
+      ;;
+  esac
+done
+
+# Check if all required arguments are provided
+if [[ -z "$JOB" || -z "$CIRCLE" || -z "$VENDOR" || -z "$ENTITY" || -z "$TIMESTAMP" || -z "$DB_PROFILE" ]]; then
+  echo "Usage: $0 --job=<job> --circle=<circle> --vendor=<vendor> --entity=<entity> --timestamp=<timestamp>"
+  echo "All arguments are required."
+  exit 1
+fi
+
+echo "Starting the application with the following parameters:"
+echo "  Job: $JOB"
+echo "  Circle: $CIRCLE"
+echo "  Vendor: $VENDOR"
+echo "  Entity: $ENTITY"
+echo "  Timestamp: $TIMESTAMP"
+
+LOG_FILE=$LOG_DIR/$CIRCLE/$JOB-$CIRCLE-$ENTITY.log
+> "$LOG_FILE"
+while true; do
+  echo "Starting the Java application..."
+  if [ "$JOB" == "delta" ]; then
+    nohup java -XX:+UseG1GC -Dcom.sun.CORBA.transport.ORBTCPReadTimeouts="1:60000:300:1" -jar "$APP_JAR" \
+      --job="$JOB" --circle="$CIRCLE" --vendor="$VENDOR" --db_profile="$DB_PROFILE" --entity="$ENTITY" \
+      --timestamp="$TIMESTAMP" --delta_days_before="$DELTA_DAYS" --view_name="$VIEW_NAME"> "$LOG_FILE" 2>&1 &
+  else
+    nohup java -XX:+UseG1GC -Dcom.sun.CORBA.transport.ORBTCPReadTimeouts="1:60000:300:1" -jar "$APP_JAR" \
+      --job="$JOB" --circle="$CIRCLE" --vendor="$VENDOR" --db_profile="$DB_PROFILE" --entity="$ENTITY" \
+      --timestamp="$TIMESTAMP" --view_name="$VIEW_NAME"> "$LOG_FILE" 2>&1 &
+  fi
+  PID=$!  # Get the PID of the background process
+
+  echo "Java application started with PID: $PID"
+
+  # Wait for the process to terminate
+  wait $PID
+  EXIT_CODE=$?
+
+  echo "Java process exited with code $EXIT_CODE."
+
+  # Check exit code to decide restart
+  if [ "$EXIT_CODE" -eq 444 ]; then
+    echo "Restarting the Java application due to exit code being less than 10..."
+    sleep 5  # Optional: Add a delay before restarting
+  else
+    echo "Exiting monitor script. Exit code: $EXIT_CODE."
+    break
+  fi
+done
+

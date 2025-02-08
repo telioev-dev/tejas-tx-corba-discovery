@@ -7,13 +7,13 @@ import com.teliolabs.corba.data.dto.SNC;
 import com.teliolabs.corba.data.holder.SNCHolder;
 import com.teliolabs.corba.data.mapper.SNCCorbaMapper;
 import com.teliolabs.corba.data.mapper.SNCResultSetMapper;
+import com.teliolabs.corba.data.repository.RouteRepository;
 import com.teliolabs.corba.data.repository.SNCRepository;
 import com.teliolabs.corba.discovery.DiscoveryService;
 import com.teliolabs.corba.transport.CorbaConnection;
 import com.teliolabs.corba.transport.CorbaErrorHandler;
 import com.teliolabs.corba.utils.CollectionUtils;
 import com.teliolabs.corba.utils.CorbaConstants;
-import com.teliolabs.corba.utils.DateTimeUtils;
 import com.teliolabs.corba.utils.SNCUtils;
 import lombok.extern.log4j.Log4j2;
 import org.tmforum.mtnm.globaldefs.NameAndStringValue_T;
@@ -106,24 +106,27 @@ public class SNCService implements DiscoveryService {
     }
 
     private void processSubnetwork(MultiLayerSubnetwork_T subnetwork, CorbaConnection corbaConnection) throws ProcessingFailureException, SQLException {
+        log.info("processSubnetwork");
         int HOW_MANY = ExecutionContext.getInstance().getCircle().getSncHowMuch();
         SubnetworkConnectionList_THolder subnetworkConnectionListTHolder = new SubnetworkConnectionList_THolder();
         SNCIterator_IHolder sncIteratorIHolder = new SNCIterator_IHolder();
         short[] rateList = new short[0];
         try {
             start = System.currentTimeMillis();
+            log.info("Get All..");
             corbaConnection.getMlsnManager().getAllSubnetworkConnections(ExecutionMode.DELTA == ExecutionContext.getInstance().getExecutionMode() ?
                     buildDeltaSearchCriteria(subnetwork) : subnetwork.name, rateList, HOW_MANY, subnetworkConnectionListTHolder, sncIteratorIHolder);
             SubnetworkConnection_T[] subnetworkConnectionTs = subnetworkConnectionListTHolder.value;
+            log.info("Discovered SNCs: {}", subnetworkConnectionTs.length);
             if (isExecutionModeImport()) {
                 saveSubnetworkConnections(subnetworkConnectionTs);
             } else {
-                processDelta(subnetworkConnectionTs);
+                processDelta(subnetworkConnectionTs, corbaConnection);
             }
 
             discoveryCount = discoveryCount + subnetworkConnectionTs.length;
             subnetworkConnectionTs = null;
-            processSubnetworkConnections(subnetworkConnectionListTHolder, sncIteratorIHolder);
+            processSubnetworkConnections(subnetworkConnectionListTHolder, sncIteratorIHolder, corbaConnection);
             end = System.currentTimeMillis();
             printDiscoveryResult(end - start);
         } catch (ProcessingFailureException e) {
@@ -133,7 +136,7 @@ public class SNCService implements DiscoveryService {
         }
     }
 
-    private void processSubnetworkConnections(SubnetworkConnectionList_THolder sncListHolder, SNCIterator_IHolder iteratorHolder) throws ProcessingFailureException, SQLException {
+    private void processSubnetworkConnections(SubnetworkConnectionList_THolder sncListHolder, SNCIterator_IHolder iteratorHolder, CorbaConnection corbaConnection) throws ProcessingFailureException, SQLException {
         int batchSize = ExecutionContext.getInstance().getCircle().getTopologyHowMuch();
         SNCIterator_I iterator = iteratorHolder.value;
         if (iterator != null) {
@@ -146,7 +149,7 @@ public class SNCService implements DiscoveryService {
                     if (isExecutionModeImport()) {
                         saveSubnetworkConnections(subnetworkConnectionTs);
                     } else {
-                        processDelta(subnetworkConnectionTs);
+                        processDelta(subnetworkConnectionTs, corbaConnection);
                     }
                     subnetworkConnectionTs = null;
                     if (discoveryCount % 1000 == 0) {
@@ -169,7 +172,6 @@ public class SNCService implements DiscoveryService {
         } else {
             log.error("No SNCs found to be loaded from the DB");
         }
-
         sncList = null;
     }
 
@@ -215,20 +217,35 @@ public class SNCService implements DiscoveryService {
         return subnetworks;
     }
 
-    public void processDelta(SubnetworkConnection_T[] subnetworkConnectionTs) {
+    public void processDelta(SubnetworkConnection_T[] subnetworkConnectionTs, CorbaConnection corbaConnection) {
         softDeleteSNCs(subnetworkConnectionTs);
         List<SubnetworkConnection_T> sncsToBeMerged = Arrays.stream(subnetworkConnectionTs)
                 .filter(snc -> !SNCUtils.isSNCDeleted(snc.additionalInfo))
                 .collect(Collectors.toList());
         if (!sncsToBeMerged.isEmpty()) {
             try {
-                sncRepository.upsertSNCs(
-                        SNCCorbaMapper.getInstance().mapFromCorbaList(sncsToBeMerged)
-                );
-                log.info("SNCs successfully merged into the database.");
+                List<SNC> toBeMerged = SNCCorbaMapper.getInstance().mapFromCorbaList(sncsToBeMerged);
+                sncRepository.upsertSNCs(toBeMerged);
+                log.info("SNCs {} successfully merged into the database.", sncsToBeMerged.size());
+
+
+                List<String> sncIdsToBeMerged = toBeMerged.stream().map(SNC::getSncId).collect(Collectors.toList());
+                log.info("Merged SNCs will have routes deleted first..");
+                RouteRepository routeRepository = RouteRepository.getInstance();
+                routeRepository.deleteSNCRoutes(sncIdsToBeMerged);
+                log.info("Merged SNCs routes deleted successfully....");
+                // Run Get Route On them again ...
+
+                log.info("Merged SNCs fresh getRoute to be called...");
+                RouteService routeService = RouteService.getInstance(routeRepository);
+                SNCHolder.getInstance().setElements(CollectionUtils.convertListToMap(toBeMerged, SNC::getSncId));
+                routeService.discoverRoutes(corbaConnection);
+                log.info("Merged SNCs fresh getRoute completed successfully...");
             } catch (SQLException e) {
                 log.error("Failed to upsert topologies into the database.", e);
                 throw new RuntimeException("Error upserting topologies.", e);
+            } catch (Exception e) {
+                throw new RuntimeException(e);
             }
         }
     }
@@ -244,7 +261,10 @@ public class SNCService implements DiscoveryService {
 
         if (!sncsToBeDeleted.isEmpty()) {
             log.info("Found {} SNCs that were deleted from NMS, marking them deleted in the DB.", sncsToBeDeleted.size());
-            sncRepository.deleteSubnetworkConnections(sncsToBeDeleted);
+            log.info("Found {} SNCs that were deleted from NMS, deleting their routes ", sncsToBeDeleted.size());
+            RouteRepository routeRepository = RouteRepository.getInstance();
+            routeRepository.deleteSNCRoutes(sncsToBeDeleted);
+            sncRepository.deleteSubnetworkConnections(sncsToBeDeleted, true);
         } else {
             log.info("No SNCs were found to be deleted from NMS, hence exiting.");
         }
@@ -258,7 +278,7 @@ public class SNCService implements DiscoveryService {
 
         if (!sncsToBeDeleted.isEmpty()) {
             log.info("Found {} SNCs that were deleted from NMS, marking them deleted in the DB.", sncsToBeDeleted.size());
-            sncRepository.deleteSubnetworkConnections(sncsToBeDeleted);
+            sncRepository.deleteSubnetworkConnections(sncsToBeDeleted, true);
         } else {
             log.info("No SNCs were found to be deleted from NMS, hence exiting.");
         }
@@ -297,7 +317,7 @@ public class SNCService implements DiscoveryService {
 
     @Override
     public int deleteAll() {
-        return 0;
+        return sncRepository.truncate();
     }
 
     @Override

@@ -126,7 +126,7 @@ public class SNCRepository extends GenericRepository<SNC> {
         return totalInserted;
     }
 
-    public void deleteSubnetworkConnections(List<String> sncsToBeDeleted) {
+    public void deleteSubnetworkConnections(List<String> sncsToBeDeleted, boolean performHardDelete) {
 
         if (sncsToBeDeleted == null || sncsToBeDeleted.isEmpty()) {
             log.warn("No SNCs provided for deletion.");
@@ -134,9 +134,14 @@ public class SNCRepository extends GenericRepository<SNC> {
         }
         String tableName = DBUtils.getTable(DiscoveryItemType.SNC);
         String placeholders = String.join(",", Collections.nCopies(sncsToBeDeleted.size(), "?"));
-        String sql = String.format(SNCQueries.SOFT_DELETE_SQL, tableName) + "(" + placeholders + ")";
+        String sql = String.format(performHardDelete ? SNCQueries.HARD_DELETE_SQL : SNCQueries.SOFT_DELETE_SQL, tableName) + "(" + placeholders + ")";
 
-        log.info("Soft delete SQL: {}", sql);
+        if (performHardDelete) {
+            log.info("Hard delete SQL: {}", sql);
+        } else {
+            log.info("Soft delete SQL: {}", sql);
+        }
+
 
         try (Connection connection = DataSourceConfig.getHikariDataSource().getConnection();
              PreparedStatement ps = connection.prepareStatement(sql)) {

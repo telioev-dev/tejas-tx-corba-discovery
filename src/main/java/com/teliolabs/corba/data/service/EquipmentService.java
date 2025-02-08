@@ -93,7 +93,7 @@ public class EquipmentService implements DiscoveryService {
 
         if (!collect.isEmpty()) {
             log.info("Found {} EQs that were deleted from NMS, marking them deleted in the DB.", collect.size());
-            equipmentRepository.deleteEquipments(EquipmentCorbaDtoMapper.getInstance().mapFromCorbaList(collect));
+            equipmentRepository.deleteEquipments(EquipmentCorbaDtoMapper.getInstance().mapFromCorbaList(collect), true);
         } else {
             log.info("No EQs were found to be deleted from NMS, hence exiting.");
         }
@@ -114,22 +114,28 @@ public class EquipmentService implements DiscoveryService {
 
                 log.info("#{} ME '{}' for Equipment processing.", i++, meName);
                 try {
-                    processManagedElement(meName);
+                    processManagedElement(meName, isExecutionModeDelta());
                 } catch (ProcessingFailureException e) {
+                    log.info("Error occurred...");
                     CorbaErrorHandler.handleProcessingFailureException(e, "getAllEquipment, ManagedElement: " + meName);
                     if (e.errorReason.equals("EventLost") || e.errorReason.contains("ENTITY_NOT_FOUND")) {
+                        log.error("getAllEquipment: '{}' failed with reason: {}, invoking without delta", meName, e.errorReason);
                         deltaFailedManagedElements.add(meName);
-                        log.error("getAllEquipment: '{}' failed with reason: {}, continuing with next ManagedElement", meName, e.errorReason);
-                        continue;
+                    } else {
+                        deltaFailedManagedElements.add(meName);
                     }
-                    throw e;
                 } catch (SQLException e) {
                     throw e;
                 }
             }
 
             if (isExecutionModeDelta() && (deltaFailedManagedElements != null && !deltaFailedManagedElements.isEmpty())) {
+                log.info("Found some failed MEs #{} that failed delta call for getAllEquipment, running full discovery on 'em now.", deltaFailedManagedElements.size());
                 // Run fullDiscovery on such MEs
+                equipmentRepository.deleteManagedElementEquipments(deltaFailedManagedElements);
+                for (String meName : deltaFailedManagedElements) {
+                    processManagedElement(meName, false);
+                }
             }
             end = System.currentTimeMillis();
             printDiscoveryResult(end - start);
@@ -166,14 +172,22 @@ public class EquipmentService implements DiscoveryService {
         equipmentList = null;
     }
 
-    private void processManagedElement(String meName) throws ProcessingFailureException, SQLException {
+    private void processManagedElement(String meName, boolean invokeDelta) throws ProcessingFailureException, SQLException {
         neNameArray[1].value = meName;
         ExecutionMode executionMode = ExecutionContext.getInstance().getExecutionMode();
         List<EquipmentOrHolder_T> equipmentOrHolderTList = new ArrayList<>();
         int HOW_MANY = ExecutionContext.getInstance().getCircle().getPtpHowMuch();
         EquipmentOrHolderList_THolder equipOrHolderList = new EquipmentOrHolderList_THolder();
         EquipmentOrHolderIterator_IHolder equipOrHolderItr = new EquipmentOrHolderIterator_IHolder();
-        eiManager.getAllEquipment(neNameArray, HOW_MANY, equipOrHolderList, equipOrHolderItr);
+        if (invokeDelta) {
+            eiManager.getAllEquipment(neNameArray, HOW_MANY, equipOrHolderList, equipOrHolderItr);
+        } else {
+            NameAndStringValue_T[] nameAndStringValueTs = new NameAndStringValue_T[2];
+            nameAndStringValueTs[0] = new NameAndStringValue_T(CorbaConstants.EMS_STR, ExecutionContext.getInstance().getCircle().getEms());
+            nameAndStringValueTs[1] = new NameAndStringValue_T(CorbaConstants.MANAGED_ELEMENT_STR, meName);
+            eiManager.getAllEquipment(nameAndStringValueTs, HOW_MANY, equipOrHolderList, equipOrHolderItr);
+        }
+
         Collections.addAll(equipmentOrHolderTList, equipOrHolderList.value);
         if (equipOrHolderItr.value != null) {
             boolean exitWhile = false;

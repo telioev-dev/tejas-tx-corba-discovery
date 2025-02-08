@@ -1,0 +1,52 @@
+#!/bin/bash
+
+# Check if all required parameters are provided
+if [ $# -lt 2 ]; then
+    echo "Usage: $0 <vendor> <circle>"
+    exit 1
+fi
+
+# Assign input parameters to variables
+vendor="$1"
+circle="$2"
+
+# List of entities to process in order
+entities=("ME" "EQUIPMENT" "PTP" "TOPOLOGY" "NIA_VIEW" "SNC" "ROUTE")
+
+# Log directory and file
+log_dir="$ECI_STITCHING_HOME/logs/$circle"
+log_file="$log_dir/import.log"
+
+# Ensure log directory exists
+mkdir -p "$log_dir"
+
+> "$log_file"  # This clears the file or creates it if it doesn't exist
+
+# Timestamp in ISO-8601 format
+timestamp="$(date --iso-8601=seconds)"
+
+# Iterate over entities sequentially
+for entity in "${entities[@]}"; do
+    entity_log="$log_dir/import_$entity.log"
+    
+    # Add extra parameter if entity is NIA_VIEW
+    extra_params=""
+    if [ "$entity" == "NIA_VIEW" ]; then
+        extra_params="--view_name=ECI_SDH_ALL"
+    fi
+
+    echo "Starting delta discovery for entity: $entity with job: delta, vendor: $vendor, circle: $circle" >> "$log_file"
+    $ECI_STITCHING_HOME/scripts/discover --job="import" --vendor="$vendor" --circle="$circle" --db_profile=PROD --entity="$entity" --timestamp="$timestamp" $extra_params > "$entity_log" 2>&1
+    EXIT_CODE=$?
+
+    # Log the exit code
+    echo "Discovery for entity: $entity completed with exit code: $EXIT_CODE" >> "$log_file"
+
+    if [ $EXIT_CODE -ne 0 ]; then
+        echo "Error occurred for entity: $entity. Exit code: $EXIT_CODE. Aborting remaining tasks." >> "$log_file"
+        exit $EXIT_CODE
+    fi
+    echo "Completed discovery for entity: $entity" | tee -a "$log_file"
+done
+
+echo "All entities processed successfully for job: delta, vendor: $vendor, circle: $circle." >> "$log_file"

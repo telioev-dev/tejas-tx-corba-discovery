@@ -21,11 +21,14 @@ import lombok.extern.log4j.Log4j2;
 import java.sql.*;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
 @Log4j2
 public class PTPRepository extends GenericRepository<PTPEntity> {
+
+    private static final int ORACLE_IN_CLAUSE_LIMIT = 300;
 
     private static final PTPRepository INSTANCE = new PTPRepository();
 
@@ -54,15 +57,63 @@ public class PTPRepository extends GenericRepository<PTPEntity> {
         preparedStatement.setTimestamp(12, Timestamp.from(terminationPoint.getLastModifiedDate().toInstant())); // last_modified_date
     }
 
-    public void deleteTerminationPoints(List<PTP> terminationPointsToDelete) {
+    public void deleteManagedElementPTPs(List<String> mePTPsToDelete) {
+        if (mePTPsToDelete == null || mePTPsToDelete.isEmpty()) {
+            log.warn("No MEs provided for PTP deletion.");
+            return;
+        }
+
+        if (mePTPsToDelete.size() <= ORACLE_IN_CLAUSE_LIMIT) {
+            // Run a single query if size is ≤ 1000
+            deleteInBatch(mePTPsToDelete);
+        }
+        for (int i = 0; i < mePTPsToDelete.size(); i += ORACLE_IN_CLAUSE_LIMIT) {
+            List<String> batch = mePTPsToDelete.subList(i, Math.min(i + ORACLE_IN_CLAUSE_LIMIT, mePTPsToDelete.size()));
+            deleteInBatch(batch);
+        }
+    }
+
+    public void deleteInBatch(List<String> mePTPsToDelete) {
+        String tableName = DBUtils.getTable(DiscoveryItemType.PTP);
+        String sql = String.format(PTPQueries.DELETE_ALL_PTP_ME_MULTIPLE, tableName) + "(" +
+                String.join(",", Collections.nCopies(mePTPsToDelete.size(), "?")) + ")";
+
+        log.info("delete ME PTP SQL: {}", sql);
+
+        try (Connection connection = DataSourceConfig.getHikariDataSource().getConnection()) {
+            connection.setAutoCommit(false); // Disable auto-commit for batch processing
+            try (PreparedStatement ps = connection.prepareStatement(sql)) {
+                // Set the me_names to be deleted in the batch
+                for (int i = 0; i < mePTPsToDelete.size(); i++) {
+                    ps.setString(i + 1, mePTPsToDelete.get(i));
+                }
+                // Execute the batch update to mark records as deleted
+                int rowsUpdated = ps.executeUpdate();
+                log.info("Total ME PTPs deleted: {}", rowsUpdated);
+                connection.commit();
+            } catch (SQLException e) {
+                connection.rollback();
+                throw new RuntimeException(e);
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public void deleteTerminationPoints(List<PTP> terminationPointsToDelete, boolean performHardDelete) {
 
         if (terminationPointsToDelete == null || terminationPointsToDelete.isEmpty()) {
             log.warn("No PTPs provided for deletion.");
             return;
         }
 
-        String sql = String.format(PTPQueries.SOFT_DELETE_SQL, getTableName());
-        log.info("PTP Soft delete SQL: {}", sql);
+        String sql = String.format(performHardDelete ? PTPQueries.HARD_DELETE_SQL : PTPQueries.SOFT_DELETE_SQL, getTableName());
+        if (performHardDelete) {
+            log.info("PTP Hard delete SQL: {}", sql);
+        } else {
+            log.info("PTP Soft delete SQL: {}", sql);
+        }
+
 
         int batchSize = 50;
         int totalDeleted = 0;
@@ -73,9 +124,8 @@ public class PTPRepository extends GenericRepository<PTPEntity> {
             int batchCounter = 0;
             for (int i = 0; i < terminationPointsToDelete.size(); i++) {
                 PTP terminationPoint = terminationPointsToDelete.get(i);
-                ps.setTimestamp(1, Timestamp.from(terminationPoint.getDeltaTimestamp().toInstant()));
-                ps.setString(2, terminationPoint.getMeName());
-                ps.setString(3, terminationPoint.getPtpId());
+                ps.setString(1, terminationPoint.getMeName());
+                ps.setString(2, terminationPoint.getPtpId());
                 ps.addBatch();
                 batchCounter++;
                 if (batchCounter == batchSize) {

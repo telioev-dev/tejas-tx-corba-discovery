@@ -9,6 +9,7 @@ public enum DiscoveryItemType {
     EQUIPMENT("equipment"),
     NIA_VIEW("nia_view"),
     SIA_VIEW("sia_view"),
+    TRAIL("trail"),
     SNC("snc");
 
 

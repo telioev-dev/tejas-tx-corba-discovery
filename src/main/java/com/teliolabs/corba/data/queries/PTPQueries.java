@@ -14,6 +14,10 @@ public final class PTPQueries {
     public static final String HARD_DELETE_SQL = "DELETE FROM %s WHERE me_name = ? AND ptp_id = ?";
 
 
+    public static final String DELETE_ALL_PTP_ME = "DELETE FROM %s WHERE me_name = ?";
+
+    public static final String DELETE_ALL_PTP_ME_MULTIPLE = "DELETE FROM %s WHERE me_name IN";
+
     public static final String INSERT_PTP_SQL =
             "INSERT INTO %s (" +
                     "ptp_id, port_location, me_name, me_label, " +

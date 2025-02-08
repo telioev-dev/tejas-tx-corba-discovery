@@ -50,6 +50,11 @@ public class ImportApplicationRunner implements ApplicationRunner {
             dataManagerService.discoverRoutes(DiscoverySource.NMS, ExecutionMode.IMPORT);
         } else if (DiscoveryItemType.ALL == discoveryItemType) {
             //dataManagerService.startFullDiscovery();
+        } else if (DiscoveryItemType.NIA_VIEW == discoveryItemType) {
+            dataManagerService.discoverNia();
+        } else if (DiscoveryItemType.TRAIL == discoveryItemType) {
+            dataManagerService.discoverSubnetworkConnections(DiscoverySource.DB, ExecutionMode.IMPORT);
+            dataManagerService.discoverTrails();
         }
     }
 }

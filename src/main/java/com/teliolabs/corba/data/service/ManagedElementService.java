@@ -112,7 +112,7 @@ public class ManagedElementService implements DiscoveryService {
         if (!meNamesToDelete.isEmpty()) {
             log.info("Found {} MEs that were deleted from NMS, marking them deleted in the DB.", meNamesToDelete.size());
             log.info("To be deleted MEs: {}", meNamesToDelete);
-            managedElementRepository.deleteManagedElements(meNamesToDelete);
+            managedElementRepository.deleteManagedElements(meNamesToDelete, true);
         } else {
             log.info("No MEs were found to be deleted from NMS, hence exiting.");
         }
@@ -152,7 +152,8 @@ public class ManagedElementService implements DiscoveryService {
         try {
             if (managedElements != null && !managedElements.isEmpty() && executionMode == ExecutionMode.IMPORT) {
                 saveManagedElements();
-                managedElements.forEach(this::logManagedElementDetails);
+                if (log.isDebugEnabled())
+                    managedElements.forEach(this::logManagedElementDetails);
             }
         } catch (Exception e) {
             log.error("Error inserting MEs into the DB", e);

@@ -14,7 +14,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <java.version>1.8</java.version>
         <oracle.version>19.3.0.0</oracle.version>
-        <!--<output.lib.dir>${project.build.directory}/${project.build.finalName}.lib</output.lib.dir> -->
+        <!--<output.lib.dir>${project.build.prod.1.directory}/${project.build.prod.1.finalName}.lib</output.lib.dir> -->
         <output.lib.dir>${project.build.directory}/lib</output.lib.dir>
         <output.jar.dir>${project.build.directory}/bin</output.jar.dir>
     </properties>

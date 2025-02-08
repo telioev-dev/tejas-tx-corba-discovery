@@ -9,14 +9,13 @@ import com.teliolabs.corba.data.holder.ManagedElementHolder;
 import com.teliolabs.corba.data.holder.PTPHolder;
 import com.teliolabs.corba.data.mapper.PTPCorbaMapper;
 import com.teliolabs.corba.data.mapper.PTPResultSetMapper;
-import com.teliolabs.corba.data.repository.ManagedElementRepository;
 import com.teliolabs.corba.data.repository.PTPRepository;
 import com.teliolabs.corba.data.types.CommunicationState;
 import com.teliolabs.corba.discovery.DiscoveryService;
 import com.teliolabs.corba.transport.CorbaConnection;
+import com.teliolabs.corba.transport.CorbaErrorHandler;
 import com.teliolabs.corba.utils.CollectionUtils;
 import com.teliolabs.corba.utils.CorbaConstants;
-import com.teliolabs.corba.utils.ManagedElementUtils;
 import com.teliolabs.corba.utils.PTPUtils;
 import lombok.extern.log4j.Log4j2;
 import org.tmforum.mtnm.globaldefs.NameAndStringValue_T;
@@ -158,9 +157,9 @@ public class PTPService implements DiscoveryService {
 
         if (!terminationPointsToBeDeleted.isEmpty()) {
             log.info("Found {} PTPs that were deleted from NMS, marking them deleted in the DB.", terminationPointsToBeDeleted.size());
-            //ptpRepository.deleteTopologies(topologiesToBeDeleted);
+            ptpRepository.deleteTerminationPoints(PTPCorbaMapper.getInstance().mapFromCorbaList(terminationPointsToBeDeleted), true);
         } else {
-            log.info("No Topologies were found to be deleted from NMS, hence exiting.");
+            log.info("No PTPs were found to be deleted from NMS, hence exiting.");
         }
     }
 
@@ -171,7 +170,7 @@ public class PTPService implements DiscoveryService {
 
         if (!terminationPointsToBeDeleted.isEmpty()) {
             log.info("Found {} PTPs that were deleted from NMS, marking them deleted in the DB.", terminationPointsToBeDeleted.size());
-            //ptpRepository.deleteTopologies(topologiesToBeDeleted);
+            ptpRepository.deleteTerminationPoints(PTPCorbaMapper.getInstance().mapFromCorbaList(terminationPointsToBeDeleted), true);
         } else {
             log.info("No Topologies were found to be deleted from NMS, hence exiting.");
         }
@@ -180,32 +179,41 @@ public class PTPService implements DiscoveryService {
     public void discoverTerminationPoints(CorbaConnection corbaConnection) throws ProcessingFailureException, SQLException {
         meManager = corbaConnection.getMeManager();
         Map<String, ManagedElement> managedElements = ManagedElementHolder.getInstance().getElements();
-        ExecutionMode executionMode = ExecutionContext.getInstance().getExecutionMode();
         if (managedElements != null && !managedElements.isEmpty()) {
             start = System.currentTimeMillis();
             Set<String> meNamesSet = managedElements.keySet();
             int i = 0;
-            try {
-                for (String meName : meNamesSet) {
-                    ManagedElement managedElement = managedElements.get(meName);
-                    if ((isExecutionModeDelta() && meName.contains("UME")) || CommunicationState.UNAVAILABLE == managedElement.getCommunicationState())
-                        continue; // IGNORE UMEs for PTP
+            for (String meName : meNamesSet) {
+                ManagedElement managedElement = managedElements.get(meName);
+                if ((isExecutionModeDelta() && meName.contains("UME")) || CommunicationState.UNAVAILABLE == managedElement.getCommunicationState())
+                    continue; // IGNORE UMEs for PTP
 
-                    log.info("#{} ME '{}' for PTP processing.", i++, meName);
-                    processManagedElementStack(meName);
+                log.info("#{} ME '{}' for PTP processing.", i++, meName);
+                try {
+                    processManagedElementStack(meName, isExecutionModeDelta());
+                } catch (ProcessingFailureException e) {
+                    CorbaErrorHandler.handleProcessingFailureException(e, "getAllPTP, ManagedElement: " + meName);
+                    if (isExecutionModeDelta()) {
+                        deltaFailedManagedElements.add(meName);
+                    }
+                } catch (SQLException e) {
+                    throw new RuntimeException(e);
                 }
-                end = System.currentTimeMillis();
-                printDiscoveryResult(end - start);
-                updateJobStatus();
-            } catch (ProcessingFailureException e) {
-                log.error("Error occurred during network calls for PTPs");
-                e.printStackTrace();
-                throw e;
-            } catch (Exception e) {
-                log.error("Error occurred during network calls for PTPs");
-                e.printStackTrace();
-                throw e;
             }
+
+            if (isExecutionModeDelta()) {
+                if (!deltaFailedManagedElements.isEmpty()) {
+                    log.info("Found some failed MEs #{} that failed delta call for getAllEquipment, deleting their PTPs now", deltaFailedManagedElements.size());
+                    log.info("Found some failed MEs #{} that failed delta call for getAllEquipment, running full discovery on 'em now.", deltaFailedManagedElements.size());
+                    ptpRepository.deleteManagedElementPTPs(deltaFailedManagedElements);
+                    for (String meName : deltaFailedManagedElements) {
+                        processManagedElementStack(meName, false);
+                    }
+                }
+            }
+            end = System.currentTimeMillis();
+            printDiscoveryResult(end - start);
+            updateJobStatus();
         } else {
             log.error("PTP discovery can't run as no MEs found in the DB");
             return;
@@ -234,13 +242,20 @@ public class PTPService implements DiscoveryService {
         terminationPoints = null;
     }
 
-    private void processManagedElementStack(String meName) throws ProcessingFailureException, SQLException {
+    private void processManagedElementStack(String meName, boolean invokeDelta) throws ProcessingFailureException, SQLException {
         neNameArray[1].value = meName;
         int batchSize = ExecutionContext.getInstance().getCircle().getPtpHowMuch();
         List<TerminationPoint_T> terminationPointTs = new ArrayList<>();
         TerminationPointList_THolder terminationPointListHolder = new TerminationPointList_THolder();
         TerminationPointIterator_IHolder terminationPointIteratorHolder = new TerminationPointIterator_IHolder();
-        meManager.getAllPTPs(neNameArray, tpLayerRateList, connectionLayerRateList, batchSize, terminationPointListHolder, terminationPointIteratorHolder);
+        if (invokeDelta) {
+            meManager.getAllPTPs(neNameArray, tpLayerRateList, connectionLayerRateList, batchSize, terminationPointListHolder, terminationPointIteratorHolder);
+        } else {
+            NameAndStringValue_T[] nameAndStringValueTs = new NameAndStringValue_T[2];
+            nameAndStringValueTs[0] = new NameAndStringValue_T(CorbaConstants.EMS_STR, ExecutionContext.getInstance().getCircle().getEms());
+            nameAndStringValueTs[1] = new NameAndStringValue_T(CorbaConstants.MANAGED_ELEMENT_STR, meName);
+            meManager.getAllPTPs(nameAndStringValueTs, tpLayerRateList, connectionLayerRateList, batchSize, terminationPointListHolder, terminationPointIteratorHolder);
+        }
         Collections.addAll(terminationPointTs, terminationPointListHolder.value);
         TerminationPointIterator_I terminationPointIterator = terminationPointIteratorHolder.value;
         if (terminationPointIterator != null) {

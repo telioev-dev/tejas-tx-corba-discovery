@@ -1,5 +1,6 @@
 package com.teliolabs.corba.utils;
 
+import com.teliolabs.corba.data.dto.SNC;
 import org.tmforum.mtnm.globaldefs.NameAndStringValue_T;
 import org.tmforum.mtnm.multiLayerSubnetwork.MultiLayerSubnetwork_T;
 import org.tmforum.mtnm.subnetworkConnection.SubnetworkConnection_T;
@@ -64,5 +65,22 @@ public class SNCUtils {
             return null;
         }
         return circuitId.substring(circuitId.length() - 6);
+    }
+
+    public static boolean isSDH(SNC snc) {
+        return !isEoS(snc) && !isPacket(snc);
+    }
+
+    public static boolean isEoS(SNC snc) {
+        short sncRate = snc.getSncRate();
+        String sncId = snc.getSncId();
+        String vCat = snc.getVCat();
+        return !"0".equals(vCat) && sncRate != 309;
+    }
+
+    public static boolean isPacket(SNC snc) {
+        short sncRate = snc.getSncRate();
+        String sncId = snc.getSncId();
+        return sncRate == 309 || sncId.toLowerCase().startsWith("/mpls");
     }
 }

@@ -4,10 +4,12 @@ package com.teliolabs.corba.utils;
 import com.teliolabs.corba.application.types.DiscoveryItemType;
 import com.teliolabs.corba.data.dto.Circle;
 import com.teliolabs.corba.application.ExecutionContext;
+import lombok.extern.log4j.Log4j2;
 
+@Log4j2
 public final class DBUtils {
 
-    private static final String UNDERSCORE = "_";
+    public static final String UNDERSCORE = "_";
     private static final String SEQ_SUFFIX = UNDERSCORE + "SEQ";
 
     public static String getSequence(DiscoveryItemType discoveryItemType) {
@@ -17,6 +19,12 @@ public final class DBUtils {
 
     public static String getTable(DiscoveryItemType discoveryItemType) {
         Circle circle = ExecutionContext.getInstance().getCircle();
+        log.debug("Circle: {}", circle);
+        log.debug("discoveryItemType: {}", discoveryItemType);
         return circle.getVendor().toUpperCase() + UNDERSCORE + discoveryItemType.name() + UNDERSCORE + circle.getName().toUpperCase();
+    }
+
+    public static String getTable(String vendor, String circle, String entity) {
+        return vendor.toUpperCase() + UNDERSCORE + entity + UNDERSCORE + circle.toUpperCase();
     }
 }

@@ -9,6 +9,7 @@ import com.teliolabs.corba.data.dto.Equipment;
 import com.teliolabs.corba.data.exception.DataAccessException;
 import com.teliolabs.corba.data.mapper.EquipmentResultSetMapper;
 import com.teliolabs.corba.data.queries.EquipmentQueries;
+import com.teliolabs.corba.data.queries.ManagedElementQueries;
 import com.teliolabs.corba.utils.DBUtils;
 import com.teliolabs.corba.utils.StringUtils;
 import lombok.AccessLevel;
@@ -20,11 +21,14 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.ZonedDateTime;
+import java.util.Collections;
 import java.util.List;
 
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
 @Log4j2
 public class EquipmentRepository extends GenericRepository<EquipmentEntity> {
+
+    private static final int ORACLE_IN_CLAUSE_LIMIT = 300;
 
     private static final EquipmentRepository INSTANCE = new EquipmentRepository();
 
@@ -40,15 +44,63 @@ public class EquipmentRepository extends GenericRepository<EquipmentEntity> {
         return insertEntities(equipments, EquipmentQueries.INSERT_SQL, batchSize);
     }
 
-    public void deleteEquipments(List<Equipment> equipmentsToDelete) {
-
-        if (equipmentsToDelete == null || equipmentsToDelete.isEmpty()) {
-            log.warn("No topologies provided for deletion.");
+    public void deleteManagedElementEquipments(List<String> meEquipmentsToDelete) {
+        if (meEquipmentsToDelete == null || meEquipmentsToDelete.isEmpty()) {
+            log.warn("No MEs provided for equipment deletion.");
             return;
         }
 
-        String sql = String.format(EquipmentQueries.SOFT_DELETE_SQL, getTableName());
-        log.info("EQ Soft delete SQL: {}", sql);
+        if (meEquipmentsToDelete.size() <= ORACLE_IN_CLAUSE_LIMIT) {
+            // Run a single query if size is ≤ 1000
+            deleteInBatch(meEquipmentsToDelete);
+        }
+        for (int i = 0; i < meEquipmentsToDelete.size(); i += ORACLE_IN_CLAUSE_LIMIT) {
+            List<String> batch = meEquipmentsToDelete.subList(i, Math.min(i + ORACLE_IN_CLAUSE_LIMIT, meEquipmentsToDelete.size()));
+            deleteInBatch(batch);
+        }
+    }
+
+    private void deleteInBatch(List<String> meEquipmentsToDelete) {
+        String tableName = DBUtils.getTable(DiscoveryItemType.EQUIPMENT);
+        String sql = String.format(EquipmentQueries.DELETE_ALL_EQ_ME_MULTIPLE, tableName) + "(" +
+                String.join(",", Collections.nCopies(meEquipmentsToDelete.size(), "?")) + ")";
+
+        log.info("delete EQ SQL: {}", sql);
+
+        try (Connection connection = DataSourceConfig.getHikariDataSource().getConnection()) {
+            connection.setAutoCommit(false); // Disable auto-commit for batch processing
+            try (PreparedStatement ps = connection.prepareStatement(sql)) {
+                // Set the me_names to be deleted in the batch
+                for (int i = 0; i < meEquipmentsToDelete.size(); i++) {
+                    ps.setString(i + 1, meEquipmentsToDelete.get(i));
+                }
+                // Execute the batch update to mark records as deleted
+                int rowsUpdated = ps.executeUpdate();
+                log.info("Total ME EQs deleted: {}", rowsUpdated);
+                connection.commit();
+            } catch (SQLException e) {
+                connection.rollback();
+                throw new RuntimeException(e);
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public void deleteEquipments(List<Equipment> equipmentsToDelete, boolean performHardDelete) {
+
+        if (equipmentsToDelete == null || equipmentsToDelete.isEmpty()) {
+            log.warn("No Equipments provided for deletion.");
+            return;
+        }
+
+        String sql = String.format(performHardDelete ? EquipmentQueries.HARD_DELETE_SQL : EquipmentQueries.SOFT_DELETE_SQL, getTableName());
+        if (performHardDelete) {
+            log.info("EQ Hard delete SQL: {}", sql);
+        } else {
+            log.info("EQ Soft delete SQL: {}", sql);
+        }
+
 
         int batchSize = 50;
         int totalDeleted = 0;

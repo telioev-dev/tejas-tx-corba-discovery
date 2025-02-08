@@ -69,13 +69,17 @@ public class ManagedElementRepository extends GenericRepository<ManagedElementEn
         return ManagedElementResultSetMapper.getInstance().mapToDto(resultSet);
     }
 
-    public void deleteManagedElements(List<String> managedElementsToDelete) {
+    public void deleteManagedElements(List<String> managedElementsToDelete, boolean performHardDelete) {
 
         String tableName = DBUtils.getTable(DiscoveryItemType.ME);
-        String sql = String.format(ManagedElementQueries.SOFT_DELETE_SQL, tableName) + "(" +
+        String sql = String.format(performHardDelete ? ManagedElementQueries.HARD_DELETE_SQL : ManagedElementQueries.SOFT_DELETE_SQL, tableName) + "(" +
                 String.join(",", Collections.nCopies(managedElementsToDelete.size(), "?")) + ")";
 
-        log.info("Soft delete SQL: {}", sql);
+        if (performHardDelete) {
+            log.info("Hard delete SQL: {}", sql);
+        } else {
+            log.info("Soft delete SQL: {}", sql);
+        }
 
         try (Connection connection = DataSourceConfig.getHikariDataSource().getConnection()) {
             connection.setAutoCommit(false); // Disable auto-commit for batch processing

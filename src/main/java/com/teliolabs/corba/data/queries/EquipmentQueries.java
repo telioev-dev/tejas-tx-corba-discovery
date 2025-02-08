@@ -12,7 +12,11 @@ public final class EquipmentQueries {
 
     public static final String SOFT_DELETE_SQL = "UPDATE %s SET is_deleted = 1, delta_timestamp = ? WHERE me_name = ? AND location = ?";
 
-    public static final String HARD_DELETE_SQL = "DELETE FROM WHERE me_name = ? AND location = ?";
+    public static final String HARD_DELETE_SQL = "DELETE FROM %s WHERE me_name = ? AND location = ?";
+
+    public static final String DELETE_ALL_EQ_ME = "DELETE FROM %s WHERE me_name = ?";
+
+    public static final String DELETE_ALL_EQ_ME_MULTIPLE = "DELETE FROM %s WHERE me_name IN";
 
     public static final String INSERT_SQL = "INSERT INTO %s " +
             "(me_name, me_label, user_label, software_version, serial_number, " +

@@ -62,6 +62,10 @@ public class TxCorbaDiscoveryApplication {
             updateJobStatus(jobEntity, jobService, e);
             if (e instanceof ProcessingFailureException) {
                 System.exit(444);
+            } else if (e instanceof org.omg.CORBA.BAD_PARAM) {
+                System.exit(333);
+            } else {
+                System.exit(222);
             }
         }
     }
@@ -119,6 +123,7 @@ public class TxCorbaDiscoveryApplication {
         log.info("deltaDays: {}", deltaDays);
         try {
             ExecutionContext executionContext = ExecutionContext.getInstance();
+            executionContext.setDbProfile(DbProfile.fromName(dbProfile));
             if (ExecutionMode.NIA == ExecutionMode.fromValue(jobValue) || ExecutionMode.SIA == ExecutionMode.fromValue(jobValue)) {
                 executionContext.setViewName(cmdArgs.get(CommandLineArg.VIEW_NAME));
                 return executionContext;
@@ -142,11 +147,12 @@ public class TxCorbaDiscoveryApplication {
     private static void executeRunner(String job, CommandLineParser cmdArgs, ExecutionContext executionContext) throws Exception {
         String entity = cmdArgs.get(CommandLineArg.ENTITY);
         String circle = cmdArgs.get(CommandLineArg.CIRCLE);
+        String vendor = cmdArgs.get(CommandLineArg.VENDOR);
 
         // Call TableManager to generate tables for the specified entity
-        log.info("Generating tables for entity: {} in circle: {}", entity, circle);
-        TableManager tableManager = TableManager.getInstance();
-        tableManager.createTableForEntity(circle, entity);
+//        log.info("Generating tables for entity: {} in circle: {}", entity, circle);
+//        TableManager tableManager = TableManager.getInstance();
+//        tableManager.createTableForEntity(vendor, circle, entity);
         switch (job.toLowerCase()) {
             case "import":
                 executionContext.setExecutionMode(ExecutionMode.IMPORT);

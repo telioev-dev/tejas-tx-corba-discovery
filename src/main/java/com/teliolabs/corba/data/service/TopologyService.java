@@ -8,6 +8,7 @@ import com.teliolabs.corba.data.mapper.TopologyCorbaMapper;
 import com.teliolabs.corba.data.repository.TopologyRepository;
 import com.teliolabs.corba.discovery.DiscoveryService;
 import com.teliolabs.corba.transport.CorbaConnection;
+import com.teliolabs.corba.transport.CorbaErrorHandler;
 import com.teliolabs.corba.utils.CorbaConstants;
 import com.teliolabs.corba.utils.DateTimeUtils;
 import com.teliolabs.corba.utils.TopologyUtils;
@@ -80,7 +81,7 @@ public class TopologyService implements DiscoveryService {
         return new NameAndStringValue_T[]{
                 new NameAndStringValue_T(CorbaConstants.EMS_STR, emsName),
                 new NameAndStringValue_T(CorbaConstants.MULTILAYER_SUBNETWORK_STR, subnetworkName),
-                new NameAndStringValue_T(CorbaConstants.TIMESTAMP_SIGNATURE_STR, DateTimeUtils.getDeltaTimestamp(1))
+                new NameAndStringValue_T(CorbaConstants.TIMESTAMP_SIGNATURE_STR, ExecutionContext.getInstance().getDeltaTimestamp())
         };
     }
 
@@ -103,7 +104,7 @@ public class TopologyService implements DiscoveryService {
         }
     }
 
-    public void runDeltaProcess(CorbaConnection corbaConnection) {
+    public void runDeltaProcess(CorbaConnection corbaConnection) throws ProcessingFailureException {
         discoverTopologies(corbaConnection, ExecutionMode.DELTA);
         if (topologicalLinkTList == null || topologicalLinkTList.isEmpty()) {
             log.warn("No topologies discovered from NMS!");
@@ -144,7 +145,8 @@ public class TopologyService implements DiscoveryService {
 
         if (!topologiesToBeDeleted.isEmpty()) {
             log.info("Found {} Topologies that were deleted from NMS, marking them deleted in the DB.", topologiesToBeDeleted.size());
-            topologyRepository.deleteTopologies(topologiesToBeDeleted);
+            log.info("These are topologies deleted: {}", topologiesToBeDeleted);
+            topologyRepository.deleteTopologies(topologiesToBeDeleted, true);
         } else {
             log.info("No Topologies were found to be deleted from NMS, hence exiting.");
         }
@@ -158,13 +160,14 @@ public class TopologyService implements DiscoveryService {
 
         if (!topologiesToBeDeleted.isEmpty()) {
             log.info("Found {} Topologies that were deleted from NMS, marking them deleted in the DB.", topologiesToBeDeleted.size());
-            topologyRepository.deleteTopologies(topologiesToBeDeleted);
+            log.info("These are topologies deleted: {}", topologiesToBeDeleted);
+            topologyRepository.deleteTopologies(topologiesToBeDeleted, true);
         } else {
             log.info("No Topologies were found to be deleted from NMS, hence exiting.");
         }
     }
 
-    public void discoverTopologies(CorbaConnection corbaConnection, ExecutionMode executionMode) {
+    public void discoverTopologies(CorbaConnection corbaConnection, ExecutionMode executionMode) throws ProcessingFailureException {
 
         try {
             List<MultiLayerSubnetwork_T> subnetworks = fetchAllSubnetworks(corbaConnection);
@@ -178,6 +181,12 @@ public class TopologyService implements DiscoveryService {
                 saveTopologies();
             }
         } catch (ProcessingFailureException | SQLException e) {
+            if (e instanceof ProcessingFailureException) {
+                log.info("Wasn instance");
+                CorbaErrorHandler.handleProcessingFailureException((ProcessingFailureException) e, "discoverTopologies");
+            } else {
+                log.info("Wasn't instance");
+            }
             log.error("Error during topology discovery: {}", e.getMessage(), e);
             throw new RuntimeException(e);
         }

@@ -60,7 +60,7 @@ public class DataManagerService {
         log.info("Total Full Discovery took: {} minutes", totalDuration / 1_000_000_000.0 / 60);
     }
 
-    public void discoverTopologies(DiscoverySource discoverySource, ExecutionMode executionMode) {
+    public void discoverTopologies(DiscoverySource discoverySource, ExecutionMode executionMode) throws ProcessingFailureException {
         log.info("Starting discovery of topologies with execution mode: {}", executionMode);
         TopologyRepository topologyRepository = TopologyRepository.getInstance();
         TopologyService topologyService = TopologyService.getInstance(topologyRepository);
@@ -247,6 +247,13 @@ public class DataManagerService {
         NiaRepository niaRepository = NiaRepository.getInstance();
         NiaService niaService = NiaService.getInstance(niaRepository);
         niaService.publishNiaView(ExecutionContext.getInstance().getViewName());
+    }
+
+    public void discoverTrails() {
+        TrailRepository trailRepository = TrailRepository.getInstance();
+        TrailService trailService = TrailService.getInstance(trailRepository);
+        trailService.deleteAll();
+        trailService.generateTrailsFromSncAndRoutes();
     }
 
     private CorbaConnection establishConnection() {

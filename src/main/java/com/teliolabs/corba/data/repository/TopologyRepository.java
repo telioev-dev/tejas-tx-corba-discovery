@@ -94,7 +94,7 @@ public class TopologyRepository extends GenericRepository<TopologyEntity> {
         return TopologyResultSetMapper.getInstance().mapToEntity(resultSet);
     }
 
-    public void deleteTopologies(List<String> topologiesToDelete) {
+    public void deleteTopologies(List<String> topologiesToDelete, boolean performHardDelete) {
 
         if (topologiesToDelete == null || topologiesToDelete.isEmpty()) {
             log.warn("No topologies provided for deletion.");
@@ -102,9 +102,14 @@ public class TopologyRepository extends GenericRepository<TopologyEntity> {
         }
         String tableName = DBUtils.getTable(DiscoveryItemType.TOPOLOGY);
         String placeholders = String.join(",", Collections.nCopies(topologiesToDelete.size(), "?"));
-        String sql = String.format(TopologyQueries.SOFT_DELETE_SQL, tableName) + "(" + placeholders + ")";
+        String sql = String.format(performHardDelete ? TopologyQueries.HARD_DELETE_SQL : TopologyQueries.SOFT_DELETE_SQL, tableName) + "(" + placeholders + ")";
 
-        log.info("Soft delete SQL: {}", sql);
+        if (performHardDelete) {
+            log.info("Hard delete SQL: {}", sql);
+        } else {
+            log.info("Soft delete SQL: {}", sql);
+        }
+
 
         try (Connection connection = DataSourceConfig.getHikariDataSource().getConnection();
              PreparedStatement ps = connection.prepareStatement(sql)) {

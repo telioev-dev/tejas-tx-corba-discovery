@@ -4,6 +4,8 @@ public class SNCQueries {
 
     public static final String SELECT_ALL_SQL = "SELECT * FROM %s";
 
+    public static final String SELECT_ALL_SNC_ID_SQL = "SELECT snc_id FROM %s";
+
     public static final String SELECT_ALL_NON_DELETED_SQL = "SELECT * FROM %s where is_deleted = 0";
 
     public static final String TRUNCATE_SQL = "TRUNCATE TABLE %s";

@@ -3,7 +3,9 @@ package com.teliolabs.corba.data.repository;
 
 import com.teliolabs.corba.application.ExecutionContext;
 import com.teliolabs.corba.application.types.DiscoveryItemType;
+import com.teliolabs.corba.config.DataSourceConfig;
 import com.teliolabs.corba.data.domain.RouteEntity;
+import com.teliolabs.corba.data.queries.EquipmentQueries;
 import com.teliolabs.corba.data.queries.RouteQueries;
 import com.teliolabs.corba.utils.DBUtils;
 import com.teliolabs.corba.utils.StringUtils;
@@ -11,9 +13,11 @@ import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Timestamp;
+import java.util.Collections;
 import java.util.List;
 
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
@@ -33,6 +37,38 @@ public class RouteRepository extends GenericRepository<RouteEntity> {
 
     public int insertRoutes(List<RouteEntity> equipments, int batchSize) throws SQLException {
         return insertEntities(equipments, RouteQueries.INSERT_SQL, batchSize);
+    }
+
+    public void deleteSNCRoutes(List<String> sncRoutesToDelete) {
+        if (sncRoutesToDelete == null || sncRoutesToDelete.isEmpty()) {
+            log.warn("No SNCs provided for route deletion.");
+            return;
+        }
+
+        String tableName = DBUtils.getTable(DiscoveryItemType.ROUTE);
+        String sql = String.format(RouteQueries.DELETE_ALL_ROUTES_SNC_MULTIPLE, tableName) + "(" +
+                String.join(",", Collections.nCopies(sncRoutesToDelete.size(), "?")) + ")";
+
+        log.info("delete SNC routes SQL: {}", sql);
+
+        try (Connection connection = DataSourceConfig.getHikariDataSource().getConnection()) {
+            connection.setAutoCommit(false); // Disable auto-commit for batch processing
+            try (PreparedStatement ps = connection.prepareStatement(sql)) {
+                // Set the me_names to be deleted in the batch
+                for (int i = 0; i < sncRoutesToDelete.size(); i++) {
+                    ps.setString(i + 1, sncRoutesToDelete.get(i));
+                }
+                // Execute the batch update to mark records as deleted
+                int rowsUpdated = ps.executeUpdate();
+                log.info("Total SNC routes deleted: {}", rowsUpdated);
+                connection.commit();
+            } catch (SQLException e) {
+                connection.rollback();
+                throw new RuntimeException(e);
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override
