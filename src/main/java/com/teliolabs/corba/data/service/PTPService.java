@@ -185,7 +185,7 @@ public class PTPService implements DiscoveryService {
             int i = 0;
             for (String meName : meNamesSet) {
                 ManagedElement managedElement = managedElements.get(meName);
-                if ((isExecutionModeDelta() && meName.contains("UME")) || CommunicationState.UNAVAILABLE == managedElement.getCommunicationState())
+                if ((isExecutionModeDelta() && meName.contains("UME")))
                     continue; // IGNORE UMEs for PTP
 
                 log.info("#{} ME '{}' for PTP processing.", i++, meName);

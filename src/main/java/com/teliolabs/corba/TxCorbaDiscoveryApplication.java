@@ -114,6 +114,7 @@ public class TxCorbaDiscoveryApplication {
 
     private static ExecutionContext initializeExecutionContext(CircleService circleService, CommandLineParser cmdArgs) {
         String circleName = cmdArgs.get(CommandLineArg.CIRCLE);
+        String entity = cmdArgs.get(CommandLineArg.ENTITY);
         String vendorName = cmdArgs.get(CommandLineArg.VENDOR);
         String timestamp = cmdArgs.get(CommandLineArg.TIMESTAMP);
         String deltaDays = cmdArgs.get(CommandLineArg.DELTA_DAYS_BEFORE);
@@ -124,7 +125,7 @@ public class TxCorbaDiscoveryApplication {
         try {
             ExecutionContext executionContext = ExecutionContext.getInstance();
             executionContext.setDbProfile(DbProfile.fromName(dbProfile));
-            if (ExecutionMode.NIA == ExecutionMode.fromValue(jobValue) || ExecutionMode.SIA == ExecutionMode.fromValue(jobValue)) {
+            if (DiscoveryItemType.NIA_VIEW == DiscoveryItemType.fromValue(entity) || DiscoveryItemType.SIA_VIEW == DiscoveryItemType.fromValue(entity)) {
                 executionContext.setViewName(cmdArgs.get(CommandLineArg.VIEW_NAME));
                 return executionContext;
             }

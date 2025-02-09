@@ -3,6 +3,15 @@
 APP_JAR="$ECI_STITCHING_HOME"/bin/tx-corba-discovery.jar
 LOG_DIR="$ECI_STITCHING_HOME"/logs
 
+JOB=
+CIRCLE=
+VENDOR=
+ENTITY=
+TIMESTAMP=
+DB_PROFILE=
+DELTA_DAYS=
+VIEW_NAME=
+
 # Validate and parse arguments
 for arg in "$@"; do
   case $arg in
@@ -45,11 +54,13 @@ if [[ -z "$JOB" || -z "$CIRCLE" || -z "$VENDOR" || -z "$ENTITY" || -z "$TIMESTAM
 fi
 
 echo "Starting the application with the following parameters:"
-echo "  Job: $JOB"
-echo "  Circle: $CIRCLE"
-echo "  Vendor: $VENDOR"
-echo "  Entity: $ENTITY"
-echo "  Timestamp: $TIMESTAMP"
+echo "  JOB: $JOB"
+echo "  CIRCLE: $CIRCLE"
+echo "  VENDOR: $VENDOR"
+echo "  ENTITY: $ENTITY"
+echo "  TIMESTAMP: $TIMESTAMP"
+echo "  DELTA_DAYS: $DELTA_DAYS"
+echo "  VIEW_NAME: $VIEW_NAME"
 
 LOG_FILE=$LOG_DIR/$CIRCLE/$JOB-$CIRCLE-$ENTITY.log
 > "$LOG_FILE"
@@ -62,7 +73,7 @@ while true; do
   else
     nohup java -XX:+UseG1GC -Dcom.sun.CORBA.transport.ORBTCPReadTimeouts="1:60000:300:1" -jar "$APP_JAR" \
       --job="$JOB" --circle="$CIRCLE" --vendor="$VENDOR" --db_profile="$DB_PROFILE" --entity="$ENTITY" \
-      --timestamp="$TIMESTAMP" --view_name="$VIEW_NAME"> "$LOG_FILE" 2>&1 &
+      --timestamp="$TIMESTAMP" --view_name="$VIEW_NAME"> $LOG_FILE 2>&1 &
   fi
   PID=$!  # Get the PID of the background process
 
