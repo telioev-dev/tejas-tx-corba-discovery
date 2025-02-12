@@ -30,7 +30,7 @@ timestamp="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
 for entity in "${entities[@]}"; do
 
     entity_log="$log_dir/import_$entity.log"
-    echo "Starting discovery for entity: $entity with job: import, vendor: $vendor, circle: $circle" | tee -a "$log_file"
+    echo "Starting discovery for entity: $entity with job: import, vendor: $vendor, circle: $circle" >> "$log_file"
 
     CMD="$ECI_STITCHING_HOME/scripts/discover --job=import --vendor=$vendor --db_profile=PROD --circle=$circle --entity=$entity --timestamp=$timestamp"
 
@@ -39,27 +39,26 @@ for entity in "${entities[@]}"; do
         CMD+=" --view_name=ECI_SDH_ALL"
     fi
 
-    echo "CMD to execution: $CMD" | tee -a "$log_file"
+    echo "CMD to execution: $CMD" >> "$log_file"
 
     # Run command and capture PID
     $CMD > "$entity_log" 2>&1 &
     PID=$!
 
-    echo "Launched discover process PID: $PID for entity: $entity" | tee -a "$log_file"
+    echo "Launched discover process PID: $PID for entity: $entity" >> "$log_file"
 
     # Wait for the process to finish and capture its exit code
-    #wait $PID
-    #EXIT_CODE=$?
+    wait $PID
+    EXIT_CODE=$?
 
-    while ps -p $PID > /dev/null 2>&1; do
-        echo "Waiting for PID $PID for entity: $entity to exit..."
-        sleep 5
-    done
+    echo "Completed discovery for entity: $entity with exit code: $EXIT_CODE" >> "$log_file"
 
-    echo "Completed discovery for entity: $entity " | tee -a "$log_file"
-
-
+    # If any entity fails, exit the script with failure status
+    if [ $EXIT_CODE -ne 0 ]; then
+        echo "Error: Entity $entity failed with exit code $EXIT_CODE. Aborting!" >> "$log_file"
+        exit $EXIT_CODE
+    fi
 
 done
 
-echo "All entities processed successfully for job: import, vendor: $vendor, circle: $circle." | tee -a "$log_file"
+echo "All entities processed successfully for job: import, vendor: $vendor, circle: $circle." >> "$log_file"

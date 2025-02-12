@@ -100,8 +100,12 @@ public class RouteService implements DiscoveryService {
                         end = System.currentTimeMillis();
                         printDiscoveryResult(end - start);
                         throw e;
-                    } catch (Exception e) {
-
+                    } catch (org.omg.CORBA.COMM_FAILURE e) {
+                        log.error("COMM_FAILURE occurred during getRoute ");
+                        e.printStackTrace();
+                    } catch (org.omg.CORBA.BAD_PARAM e){
+                        log.error("BAD_PARAM occurred during getRoute ");
+                        e.printStackTrace();
                     }
                 }
             }
