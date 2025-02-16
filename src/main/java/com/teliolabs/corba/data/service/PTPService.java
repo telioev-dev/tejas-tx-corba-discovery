@@ -281,7 +281,9 @@ public class PTPService implements DiscoveryService {
         if (isExecutionModeImport()) {
             saveTerminationPoints(terminationPointTs);
         } else {
-            terminationPointTs.forEach(this::logTerminationPointDetails);
+            if (log.isDebugEnabled()) {
+                terminationPointTs.forEach(this::logTerminationPointDetails);
+            }
             processDelta(terminationPointTs);
         }
         neNameArray[1].value = null;
@@ -289,9 +291,9 @@ public class PTPService implements DiscoveryService {
 
     private void logTerminationPointDetails(TerminationPoint_T terminationPoint) {
         Arrays.stream(terminationPoint.name).forEach(attr ->
-                log.info("PTP Attribute - Name: {}, Value: {}", attr.name, attr.value));
+                log.debug("PTP Attribute - Name: {}, Value: {}", attr.name, attr.value));
         Arrays.stream(terminationPoint.additionalInfo).forEach(attr ->
-                log.info("PTP Additional Info - Name: {}, Value: {}", attr.name, attr.value));
+                log.debug("PTP Additional Info - Name: {}, Value: {}", attr.name, attr.value));
     }
 
     private void logManagedElementDetails(ManagedElement_T managedElement) {

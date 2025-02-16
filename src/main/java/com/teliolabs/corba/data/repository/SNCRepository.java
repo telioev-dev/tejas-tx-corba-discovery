@@ -37,6 +37,33 @@ public class SNCRepository extends GenericRepository<SNC> {
         return findAll(mapperFunction, excludeDeleted ? SNCQueries.SELECT_ALL_NON_DELETED_SQL : SNCQueries.SELECT_ALL_SQL);
     }
 
+    public <T> List<T> findAllPacketSNCs(ResultSetMapperFunction<ResultSet, T> mapperFunction, boolean excludeDeleted) {
+        log.info("findAllPacketSNCs - excludeDeleted: {}", excludeDeleted);
+        return findAll(mapperFunction, excludeDeleted ? SNCQueries.SELECT_ALL_NON_DELETED_PACKET_SQL : SNCQueries.SELECT_ALL_PACKET_SQL);
+    }
+
+    public int deleteSNCs(boolean isPacket) {
+        String tableName = getTableName();
+        String sql = String.format(isPacket ? SNCQueries.DELETE_ALL_PACKET_SQL : SNCQueries.DELETE_ALL_NON_PACKET_SQL, tableName);
+        int recordsDeleted = 0;
+        try (Connection connection = DataSourceConfig.getHikariDataSource().getConnection();
+             Statement stmt = connection.createStatement()) {
+
+            // Execute the DELETE statement
+            recordsDeleted = stmt.executeUpdate(sql);
+
+            if (isPacket) {
+                log.info("#{} Packet SNCs deleted from Table: {} ", recordsDeleted, tableName);
+            } else {
+                log.info("#{} SNCs deleted from Table: {} ", recordsDeleted, tableName);
+            }
+        } catch (SQLException e) {
+            log.error("Error truncating table: {}", tableName, e);
+            throw new DataAccessException("Error truncating table: " + tableName, e);
+        }
+        return recordsDeleted;
+    }
+
     @Override
     protected String getTableName() {
         return DBUtils.getTable(DiscoveryItemType.SNC);

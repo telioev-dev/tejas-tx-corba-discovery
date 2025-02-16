@@ -9,7 +9,6 @@ import com.teliolabs.corba.data.dto.Equipment;
 import com.teliolabs.corba.data.exception.DataAccessException;
 import com.teliolabs.corba.data.mapper.EquipmentResultSetMapper;
 import com.teliolabs.corba.data.queries.EquipmentQueries;
-import com.teliolabs.corba.data.queries.ManagedElementQueries;
 import com.teliolabs.corba.utils.DBUtils;
 import com.teliolabs.corba.utils.StringUtils;
 import lombok.AccessLevel;
@@ -65,8 +64,6 @@ public class EquipmentRepository extends GenericRepository<EquipmentEntity> {
         String sql = String.format(EquipmentQueries.DELETE_ALL_EQ_ME_MULTIPLE, tableName) + "(" +
                 String.join(",", Collections.nCopies(meEquipmentsToDelete.size(), "?")) + ")";
 
-        log.info("delete EQ SQL: {}", sql);
-
         try (Connection connection = DataSourceConfig.getHikariDataSource().getConnection()) {
             connection.setAutoCommit(false); // Disable auto-commit for batch processing
             try (PreparedStatement ps = connection.prepareStatement(sql)) {
@@ -111,9 +108,8 @@ public class EquipmentRepository extends GenericRepository<EquipmentEntity> {
             int batchCounter = 0;
             for (int i = 0; i < equipmentsToDelete.size(); i++) {
                 Equipment equipment = equipmentsToDelete.get(i);
-                ps.setTimestamp(1, Timestamp.from(equipment.getDeltaTimestamp().toInstant()));
-                ps.setString(2, equipment.getMeName());
-                ps.setString(3, equipment.getLocation());
+                ps.setString(1, equipment.getMeName());
+                ps.setString(2, equipment.getLocation());
                 ps.addBatch();
                 batchCounter++;
                 if (batchCounter == batchSize) {
@@ -171,7 +167,6 @@ public class EquipmentRepository extends GenericRepository<EquipmentEntity> {
         }
 
         String upsertSQL = String.format(EquipmentQueries.UPSERT_SQL, getTableName(), getTableName());
-        log.info("upsertSQL: {}", upsertSQL);
         int totalInserted = 0;
 
         try (Connection connection = DataSourceConfig.getHikariDataSource().getConnection()) {

@@ -43,11 +43,28 @@ public class ImportApplicationRunner implements ApplicationRunner {
             dataManagerService.discoverManagedElements(DiscoverySource.DB, ExecutionMode.IMPORT);
             dataManagerService.discoverTerminationPoints(DiscoverySource.DB, ExecutionMode.IMPORT);
             dataManagerService.discoverSubnetworkConnections(DiscoverySource.NMS, ExecutionMode.IMPORT);
+        } else if (DiscoveryItemType.SNC_PACKET == discoveryItemType) {
+            log.info("Import Packet SNCs will start with discovering ME from DB and PTP from DB");
+            dataManagerService.discoverManagedElements(DiscoverySource.DB, ExecutionMode.IMPORT);
+            dataManagerService.discoverTerminationPoints(DiscoverySource.DB, ExecutionMode.IMPORT);
+            dataManagerService.discoverSubnetworkConnections(DiscoverySource.NMS, ExecutionMode.IMPORT);
         } else if (DiscoveryItemType.ROUTE == discoveryItemType) {
+            log.info("Import Routes will start with discovering ME from DB and PTP from DB");
             dataManagerService.discoverManagedElements(DiscoverySource.DB, ExecutionMode.IMPORT);
             dataManagerService.discoverTerminationPoints(DiscoverySource.DB, ExecutionMode.IMPORT);
             dataManagerService.discoverSubnetworkConnections(DiscoverySource.DB, ExecutionMode.IMPORT);
             dataManagerService.discoverRoutes(DiscoverySource.NMS, ExecutionMode.IMPORT);
+        } else if (DiscoveryItemType.ROUTE_PACKET == discoveryItemType) {
+            log.info("Import Packet Routes s will start with discovering ME from DB and PTP from DB");
+            dataManagerService.discoverManagedElements(DiscoverySource.DB, ExecutionMode.IMPORT);
+            dataManagerService.discoverTerminationPoints(DiscoverySource.DB, ExecutionMode.IMPORT);
+            dataManagerService.discoverSubnetworkConnections(DiscoverySource.DB, ExecutionMode.IMPORT);
+            dataManagerService.discoverRoutes(DiscoverySource.NMS, ExecutionMode.IMPORT);
+        } else if (DiscoveryItemType.FDFR == discoveryItemType) {
+            log.info("Import Packet Routes s will start with discovering ME from DB and PTP from DB");
+            dataManagerService.discoverManagedElements(DiscoverySource.DB, ExecutionMode.IMPORT);
+            dataManagerService.discoverTerminationPoints(DiscoverySource.DB, ExecutionMode.IMPORT);
+            dataManagerService.discoverFDFR(DiscoverySource.NMS, ExecutionMode.IMPORT);
         } else if (DiscoveryItemType.ALL == discoveryItemType) {
             //dataManagerService.startFullDiscovery();
         } else if (DiscoveryItemType.NIA_VIEW == discoveryItemType) {

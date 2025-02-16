@@ -105,9 +105,9 @@ public class TopologyRepository extends GenericRepository<TopologyEntity> {
         String sql = String.format(performHardDelete ? TopologyQueries.HARD_DELETE_SQL : TopologyQueries.SOFT_DELETE_SQL, tableName) + "(" + placeholders + ")";
 
         if (performHardDelete) {
-            log.info("Hard delete SQL: {}", sql);
+            log.info("Performing hard delete for topologies.");
         } else {
-            log.info("Soft delete SQL: {}", sql);
+            log.info("Performing soft delete for topologies.");
         }
 
 

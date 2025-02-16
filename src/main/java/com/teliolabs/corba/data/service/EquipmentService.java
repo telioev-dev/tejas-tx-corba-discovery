@@ -209,7 +209,9 @@ public class EquipmentService implements DiscoveryService {
         if (executionMode == ExecutionMode.IMPORT) {
             saveEquipments(equipmentOrHolderTList);
         } else {
-            equipmentOrHolderTList.forEach(this::logEquipmentDetails);
+            if (log.isDebugEnabled()) {
+                equipmentOrHolderTList.forEach(this::logEquipmentDetails);
+            }
             processDelta(equipmentOrHolderTList);
         }
 
@@ -218,11 +220,11 @@ public class EquipmentService implements DiscoveryService {
     private void logEquipmentDetails(EquipmentOrHolder_T equipmentOrHolderT) {
         if (equipmentOrHolderT.discriminator().value() == 0) {
             Equipment_T equipment = equipmentOrHolderT.equip();
-            log.info("EQ UserLabel: {}", equipment.userLabel);
+            log.debug("EQ UserLabel: {}", equipment.userLabel);
             Arrays.stream(equipment.name).forEach(attr ->
-                    log.info("EQ Attribute - Name: {}, Value: {}", attr.name, attr.value));
+                    log.debug("EQ Attribute - Name: {}, Value: {}", attr.name, attr.value));
             Arrays.stream(equipment.additionalInfo).forEach(attr ->
-                    log.info("EQ Additional Info - Name: {}, Value: {}", attr.name, attr.value));
+                    log.debug("EQ Additional Info - Name: {}, Value: {}", attr.name, attr.value));
         }
 
     }

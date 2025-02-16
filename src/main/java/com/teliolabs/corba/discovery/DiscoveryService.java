@@ -1,5 +1,6 @@
 package com.teliolabs.corba.discovery;
 
+import com.teliolabs.corba.application.ExecutionContext;
 import com.teliolabs.corba.application.ExecutionContextAware;
 import com.teliolabs.corba.application.domain.DeltaJobEntity;
 import com.teliolabs.corba.application.domain.ImportJobEntity;
@@ -26,7 +27,9 @@ public interface DiscoveryService extends ExecutionContextAware {
 
     long getEndDiscoveryTimestampInMillis();
 
-    DiscoveryItemType getDiscoveryItemType();
+    default DiscoveryItemType getDiscoveryItemType() {
+        return ExecutionContext.getInstance().getEntity();
+    }
 
     default void updateJobStatus() {
         JobEntity runningJob = getCurrentJob();

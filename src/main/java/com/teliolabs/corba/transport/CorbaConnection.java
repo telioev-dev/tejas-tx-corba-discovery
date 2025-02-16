@@ -22,6 +22,8 @@ import org.tmforum.mtnm.emsSessionFactory.EmsSessionFactory_I;
 import org.tmforum.mtnm.emsSessionFactory.EmsSessionFactory_IHelper;
 import org.tmforum.mtnm.equipment.EquipmentInventoryMgr_I;
 import org.tmforum.mtnm.equipment.EquipmentInventoryMgr_IHelper;
+import org.tmforum.mtnm.flowDomain.FlowDomainMgr_I;
+import org.tmforum.mtnm.flowDomain.FlowDomainMgr_IHelper;
 import org.tmforum.mtnm.globaldefs.ProcessingFailureException;
 import org.tmforum.mtnm.managedElementManager.ManagedElementMgr_I;
 import org.tmforum.mtnm.managedElementManager.ManagedElementMgr_IHelper;
@@ -38,6 +40,7 @@ public final class CorbaConnection implements AutoCloseable {
     public static final String ME_MANAGER_NAME = "ManagedElement";
     public static final String EI_MANAGER_NAME = "EquipmentInventory";
     public static final String MLS_MANAGER_NAME = "MultiLayerSubnetwork";
+    public static final String FLOW_DOMAIN_MANAGER_NAME = "FlowDomain";
 
     public static final String EMS_MANAGER_NAME = "EMS";
     public static final String PRT_MANAGER_NAME = "Protection";
@@ -56,6 +59,9 @@ public final class CorbaConnection implements AutoCloseable {
 
     @Getter
     private EMSMgr_I emsManager;
+
+    @Getter
+    private FlowDomainMgr_I flowDomainMgr;
 
     @Getter
     MultiLayerSubnetworkMgr_I mlsnManager;
@@ -90,6 +96,12 @@ public final class CorbaConnection implements AutoCloseable {
             managerInterface = new Common_IHolder();
             corbaSession.getEmsSession().getManager(EI_MANAGER_NAME, managerInterface);
             eiManager = EquipmentInventoryMgr_IHelper.narrow(managerInterface.value);
+        }
+
+        if (flowDomainMgr == null) {
+            managerInterface = new Common_IHolder();
+            corbaSession.getEmsSession().getManager(FLOW_DOMAIN_MANAGER_NAME, managerInterface);
+            flowDomainMgr = FlowDomainMgr_IHelper.narrow(managerInterface.value);
         }
     }
 

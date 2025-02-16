@@ -15,6 +15,7 @@ public final class CorbaConstants {
     public static final String EMS_STR = "EMS";
     public static final String TIMESTAMP_SIGNATURE_STR = "LSNExt_TimestampSignature";
     public static final String MULTILAYER_SUBNETWORK_STR = "MultiLayerSubnetwork";
+    public static final String FLOW_DOMAIN_STR = "FlowDomain";
     public static final String SUBNETWORK_CONNECTION_STR = "SubnetworkConnection";
     public static final String UNKNOWN_STR = "UNKNOWN";
 
@@ -49,4 +50,22 @@ public final class CorbaConstants {
     public static final String LSN_EXT_V_CAT_STR = "LSNExt_VirtualConcatRate";
 
     public static final Set<String> IP_ADDRESS_KEYS = new HashSet<>(Arrays.asList("LSNExt_NetworkAddress", "address", "IPAddress", "CommunicationIPAddress", "Management IP Address"));
+
+    // FDFR
+
+    public static final String LSN_EXT_SERVICE_NAME_STR = "LSNExt_ServiceName";
+    public static final String LSN_EXT_CUSTOMER_STR = "LSNExt_Customer";
+    public static final String LSN_EXT_L2VPN_ID_STR = "LSNExt_L2VPN_ID";
+    public static final String LSN_EXT_TRAFFIC_ENABLED_STR = "LSNExt_Traffic_Enabled";
+    public static final String LSN_EXT_VFIB_PROV_SIZE_STR = "LSNExt_VFIB_Prov_Size";
+    public static final String LSN_EXT_BSC_PROFILE_STR = "LSNExt_BSC_Profile";
+    public static final String LSN_EXT_TUNNEL_ID_LIST_STR = "LSNExt_TunnelID_List";
+    public static final String LSN_EXT_BSC_CIR_STR = "LSNExt_BSC_CIR";
+    public static final String LSN_EXT_BSC_EIR_STR = "LSNExt_BSC_EIR";
+
+
+
+
+
+
 }

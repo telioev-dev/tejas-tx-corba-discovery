@@ -4,13 +4,21 @@ public class SNCQueries {
 
     public static final String SELECT_ALL_SQL = "SELECT * FROM %s";
 
+    public static final String SELECT_ALL_PACKET_SQL = "SELECT * FROM %s where snc_rate = '309'";
+
     public static final String SELECT_ALL_SNC_ID_SQL = "SELECT snc_id FROM %s";
 
     public static final String SELECT_ALL_NON_DELETED_SQL = "SELECT * FROM %s where is_deleted = 0";
 
+    public static final String SELECT_ALL_NON_DELETED_PACKET_SQL = "SELECT * FROM %s where snc_rate = '309' AND is_deleted = 0";
+
     public static final String TRUNCATE_SQL = "TRUNCATE TABLE %s";
 
     public static final String DELETE_ALL_SQL = "DELETE FROM %s";
+
+    public static final String DELETE_ALL_PACKET_SQL = "DELETE FROM %s where snc_rate = '309'";
+
+    public static final String DELETE_ALL_NON_PACKET_SQL = "DELETE FROM %s where snc_rate != '309'";
 
     public static final String SOFT_DELETE_SQL = "UPDATE %s SET is_deleted = 1 WHERE snc_id IN ";
 

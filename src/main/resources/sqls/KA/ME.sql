@@ -27,3 +27,5 @@ ALTER TABLE ECI_ME_KA add (
     communication_state           NUMBER(1,0)
 );
 
+
+CREATE TABLE ECI_ME_KA_TEMP AS SELECT * FROM ECI_ME_KA WHERE 1=0;

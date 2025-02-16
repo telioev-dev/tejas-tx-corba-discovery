@@ -59,7 +59,7 @@ public class RouteService implements DiscoveryService {
     private RouteService(RouteRepository routeRepository) {
         this.routeRepository = routeRepository;
         DiscoveryItemType discoveryItemType = ExecutionContext.getInstance().getEntity();
-        if (DiscoveryItemType.ROUTE == discoveryItemType || DiscoveryItemType.SNC == discoveryItemType) {
+        if (DiscoveryItemType.ROUTE == discoveryItemType || DiscoveryItemType.ROUTE_PACKET == discoveryItemType || DiscoveryItemType.SNC == discoveryItemType || DiscoveryItemType.SNC_PACKET == discoveryItemType) {
             sncNameArray = new NameAndStringValue_T[3];
             sncNameArray[0] = new NameAndStringValue_T(CorbaConstants.EMS_STR, ExecutionContext.getInstance().getCircle().getEms().replace(":", "/"));
             sncNameArray[1] = new NameAndStringValue_T(CorbaConstants.MULTILAYER_SUBNETWORK_STR, "0001");
@@ -103,7 +103,7 @@ public class RouteService implements DiscoveryService {
                     } catch (org.omg.CORBA.COMM_FAILURE e) {
                         log.error("COMM_FAILURE occurred during getRoute ");
                         e.printStackTrace();
-                    } catch (org.omg.CORBA.BAD_PARAM e){
+                    } catch (org.omg.CORBA.BAD_PARAM e) {
                         log.error("BAD_PARAM occurred during getRoute ");
                         e.printStackTrace();
                     }
@@ -128,13 +128,11 @@ public class RouteService implements DiscoveryService {
         discoveryCount = discoveryCount + routeHolder.value.length;
         log.info("getRoute: got " + routeHolder.value.length + " Cross-connects for SNC " + sncId);
         List<RouteEntity> routeEntities = new ArrayList<>();
-        int i = 1;
         for (CrossConnect_T crossConnect : routeHolder.value) {
             if (log.isDebugEnabled()) {
                 logCrossConnectDetails(crossConnect);
             }
             routeEntities.addAll(processCrossConnect(crossConnect, snc));
-            i++;
         }
 
         if (!routeEntities.isEmpty()) {
@@ -301,10 +299,5 @@ public class RouteService implements DiscoveryService {
     @Override
     public long getEndDiscoveryTimestampInMillis() {
         return end;
-    }
-
-    @Override
-    public DiscoveryItemType getDiscoveryItemType() {
-        return DiscoveryItemType.ROUTE;
     }
 }

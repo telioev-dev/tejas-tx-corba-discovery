@@ -2,6 +2,7 @@ package com.teliolabs.corba.data.service;
 
 
 import com.teliolabs.corba.application.ExecutionContext;
+import com.teliolabs.corba.application.types.DiscoveryItemType;
 import com.teliolabs.corba.application.types.DiscoverySource;
 import com.teliolabs.corba.application.types.ExecutionMode;
 import com.teliolabs.corba.data.repository.*;
@@ -137,6 +138,33 @@ public class DataManagerService {
             }
         } else {
             sncService.loadAll();
+        }
+
+    }
+
+    public void discoverFDFR(DiscoverySource discoverySource, ExecutionMode executionMode) throws Exception {
+        log.info("Starting discovery of FDFRs with execution mode: {}", executionMode);
+        FDFRRepository fdfrRepository = FDFRRepository.getInstance();
+        FDFRService fdfrService = FDFRService.getInstance(fdfrRepository);
+        if (discoverySource == DiscoverySource.NMS) {
+            try (CorbaConnection corbaConnection = establishConnection()) {
+                if (corbaConnection == null) return;
+
+                if (executionMode == ExecutionMode.IMPORT) {
+                    fdfrService.deleteAll();
+                    fdfrService.discoverFDFR(corbaConnection, executionMode);
+                } else if (executionMode == ExecutionMode.DELTA) {
+                    fdfrService.runDeltaProcess(corbaConnection);
+                } else {
+                    log.warn("Unsupported execution mode: {}", executionMode.name());
+                }
+
+            } catch (Exception e) {
+                log.error("Error during discoverFDFR process: {}", ExecutionContext.getInstance().getCircle().getName(), e);
+                throw e;
+            }
+        } else {
+            //
         }
 
     }

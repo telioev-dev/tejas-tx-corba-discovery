@@ -106,16 +106,12 @@ public class SNCService implements DiscoveryService {
     }
 
     private void processSubnetwork(MultiLayerSubnetwork_T subnetwork, CorbaConnection corbaConnection) throws ProcessingFailureException, SQLException {
-        log.info("processSubnetwork");
         int HOW_MANY = ExecutionContext.getInstance().getCircle().getSncHowMuch();
         SubnetworkConnectionList_THolder subnetworkConnectionListTHolder = new SubnetworkConnectionList_THolder();
         SNCIterator_IHolder sncIteratorIHolder = new SNCIterator_IHolder();
-        short[] rateList = new short[0];
         try {
             start = System.currentTimeMillis();
-            log.info("Get All..");
-            corbaConnection.getMlsnManager().getAllSubnetworkConnections(ExecutionMode.DELTA == ExecutionContext.getInstance().getExecutionMode() ?
-                    buildDeltaSearchCriteria(subnetwork) : subnetwork.name, rateList, HOW_MANY, subnetworkConnectionListTHolder, sncIteratorIHolder);
+            corbaConnection.getMlsnManager().getAllSubnetworkConnections(ExecutionMode.DELTA == ExecutionContext.getInstance().getExecutionMode() ? buildDeltaSearchCriteria(subnetwork) : subnetwork.name, getDiscoveryItemType() == DiscoveryItemType.SNC_PACKET ? new short[]{309} : new short[]{}, HOW_MANY, subnetworkConnectionListTHolder, sncIteratorIHolder);
             SubnetworkConnection_T[] subnetworkConnectionTs = subnetworkConnectionListTHolder.value;
             log.info("Discovered SNCs: {}", subnetworkConnectionTs.length);
             if (isExecutionModeImport()) {
@@ -165,10 +161,21 @@ public class SNCService implements DiscoveryService {
     }
 
     public void loadAll() {
-        List<SNC> sncList = sncRepository.findAllSNCs(SNCResultSetMapper.getInstance()::mapToDto, true);
+        List<SNC> sncList = null;
+        boolean isPacket = getDiscoveryItemType() == DiscoveryItemType.ROUTE_PACKET;
+        if (isPacket) {
+            sncList = sncRepository.findAllPacketSNCs(SNCResultSetMapper.getInstance()::mapToDto, true);
+        } else {
+            sncList = sncRepository.findAllSNCs(SNCResultSetMapper.getInstance()::mapToDto, true);
+        }
         if (sncList != null && !sncList.isEmpty()) {
             SNCHolder.getInstance().setElements(CollectionUtils.convertListToMap(sncList, SNC::getSncId));
-            log.info("Total SNCs {} loaded from DB", sncList.size());
+            if (isPacket) {
+                log.info("Total Packet SNCs {} loaded from DB", sncList.size());
+            } else {
+                log.info("Total SNCs {} loaded from DB", sncList.size());
+            }
+
         } else {
             log.error("No SNCs found to be loaded from the DB");
         }
@@ -317,7 +324,14 @@ public class SNCService implements DiscoveryService {
 
     @Override
     public int deleteAll() {
-        return sncRepository.truncate();
+        log.info("getDiscoveryItemType(): {}", getDiscoveryItemType());
+        if (getDiscoveryItemType() == DiscoveryItemType.SNC_PACKET) {
+            log.info("Delete  SNC_PACKET");
+            return sncRepository.deleteSNCs(true);
+        } else {
+            log.info("Delete  SNC");
+            return sncRepository.deleteSNCs(false);
+        }
     }
 
     @Override
@@ -335,8 +349,4 @@ public class SNCService implements DiscoveryService {
         return end;
     }
 
-    @Override
-    public DiscoveryItemType getDiscoveryItemType() {
-        return DiscoveryItemType.SNC;
-    }
 }

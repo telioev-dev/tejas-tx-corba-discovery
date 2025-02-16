@@ -10,7 +10,10 @@ public enum DiscoveryItemType {
     NIA_VIEW("nia_view"),
     SIA_VIEW("sia_view"),
     TRAIL("trail"),
-    SNC("snc");
+    SNC("snc"),
+    SNC_PACKET("snc_packet"),
+    FDFR("fdfr"),
+    ROUTE_PACKET("route_packet");
 
 
     private final String value;
