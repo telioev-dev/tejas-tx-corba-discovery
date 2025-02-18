@@ -14,7 +14,7 @@ circle="$2"
 entities=("ME" "EQUIPMENT" "PTP" "TOPOLOGY" "NIA_VIEW" "SNC" "SNC_PACKET" "ROUTE" "ROUTE_PACKET" "TRAIL")
 
 # Log directory and file
-log_dir="$ECI_STITCHING_HOME/logs/$circle"
+log_dir="$ECI_STITCHING_HOME/logs/$circle/import"
 log_file="$log_dir/import.log"
 
 # Ensure log directory exists
@@ -36,7 +36,7 @@ for entity in "${entities[@]}"; do
 
     # Add extra argument for NIA_VIEW
     if [ "$entity" == "NIA_VIEW" ]; then
-        CMD+=" --view_name=ECI_SDH_ALL"
+        CMD+=" --view_name=ECI_ALL_NIA"
     fi
 
     echo "CMD to execution: $CMD" >> "$log_file"

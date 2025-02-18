@@ -43,13 +43,11 @@ public class DeltaApplicationRunner implements ApplicationRunner {
             dataManagerService.discoverManagedElements(DiscoverySource.DB, ExecutionMode.IMPORT);
             dataManagerService.discoverTerminationPoints(DiscoverySource.DB, ExecutionMode.IMPORT);
             dataManagerService.discoverSubnetworkConnections(DiscoverySource.NMS, ExecutionMode.DELTA);
-        } else if (DiscoveryItemType.ROUTE == discoveryItemType) {
-            dataManagerService.discoverSubnetworkConnections(DiscoverySource.DB, ExecutionMode.IMPORT);
-            dataManagerService.discoverRoutes(DiscoverySource.NMS, ExecutionMode.DELTA);
-        } else if (DiscoveryItemType.ALL == discoveryItemType) {
-            //dataManagerService.startFullDiscovery();
         } else if (DiscoveryItemType.NIA_VIEW == discoveryItemType) {
             dataManagerService.discoverNia();
+        } else if (DiscoveryItemType.TRAIL == discoveryItemType) {
+            dataManagerService.discoverSubnetworkConnections(DiscoverySource.DB, ExecutionMode.IMPORT);
+            dataManagerService.discoverTrails();
         }
     }
 }

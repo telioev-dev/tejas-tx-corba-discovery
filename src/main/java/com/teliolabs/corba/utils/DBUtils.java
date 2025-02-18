@@ -11,6 +11,7 @@ public final class DBUtils {
 
     public static final String UNDERSCORE = "_";
     private static final String SEQ_SUFFIX = UNDERSCORE + "SEQ";
+    private static final String TEMP_STR = "TEMP";
 
     public static String getSequence(DiscoveryItemType discoveryItemType) {
         Circle circle = ExecutionContext.getInstance().getCircle();
@@ -19,9 +20,12 @@ public final class DBUtils {
 
     public static String getTable(DiscoveryItemType discoveryItemType) {
         Circle circle = ExecutionContext.getInstance().getCircle();
-        log.debug("Circle: {}", circle);
-        log.debug("discoveryItemType: {}", discoveryItemType);
         return circle.getVendor().toUpperCase() + UNDERSCORE + discoveryItemType.name() + UNDERSCORE + circle.getName().toUpperCase();
+    }
+
+    public static String getTempTable(DiscoveryItemType discoveryItemType) {
+        Circle circle = ExecutionContext.getInstance().getCircle();
+        return circle.getVendor().toUpperCase() + UNDERSCORE + discoveryItemType.name() + UNDERSCORE + circle.getName().toUpperCase() + UNDERSCORE + TEMP_STR;
     }
 
     public static String getTable(String vendor, String circle, String entity) {
