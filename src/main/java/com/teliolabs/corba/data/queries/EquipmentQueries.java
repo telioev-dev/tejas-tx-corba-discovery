@@ -6,27 +6,27 @@ public final class EquipmentQueries {
     }
 
 
-    public static final String TRUNCATE_SQL = "TRUNCATE TABLE %s";
+    public static final String TRUNCATE_SQL = "TRUNCATE TABLE \"%s\"";
 
-    public static final String DELETE_ALL_SQL = "DELETE FROM %s";
+    public static final String DELETE_ALL_SQL = "DELETE FROM \"%s\"";
 
-    public static final String SOFT_DELETE_SQL = "UPDATE %s SET is_deleted = 1, delta_timestamp = ? WHERE me_name = ? AND location = ?";
+    public static final String SOFT_DELETE_SQL = "UPDATE \"%s\" SET is_deleted = 1, delta_timestamp = ? WHERE me_name = ? AND location = ?";
 
-    public static final String HARD_DELETE_SQL = "DELETE FROM %s WHERE me_name = ? AND location = ?";
+    public static final String HARD_DELETE_SQL = "DELETE FROM \"%s\" WHERE me_name = ? AND location = ?";
 
-    public static final String DELETE_ALL_EQ_ME = "DELETE FROM %s WHERE me_name = ?";
+    public static final String DELETE_ALL_EQ_ME = "DELETE FROM \"%s\" WHERE me_name = ?";
 
-    public static final String DELETE_ALL_EQ_ME_MULTIPLE = "DELETE FROM %s WHERE me_name IN";
+    public static final String DELETE_ALL_EQ_ME_MULTIPLE = "DELETE FROM \"%s\" WHERE me_name IN";
 
-    public static final String INSERT_SQL = "INSERT INTO %s " +
+    public static final String INSERT_SQL = "INSERT INTO \"%s\" " +
             "(me_name, me_label, user_label, software_version, serial_number, " +
             "expected_equipment, installed_equipment, location, last_modified_date) " +
             "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
-    public static final String SELECT_ALL_SQL = "SELECT * FROM %s";
+    public static final String SELECT_ALL_SQL = "SELECT * FROM \"%s\"";
 
     public static final String UPSERT_SQL =
-            "MERGE INTO %s target " +
+            "MERGE INTO \"%s\" target " +
                     "USING ( " +
                     "    SELECT ? AS me_name, ? AS me_label, ? AS user_label, ? AS software_version, " +
                     "           ? AS serial_number, ? AS expected_equipment, ? AS installed_equipment, ? AS location, " +
@@ -53,7 +53,7 @@ public final class EquipmentQueries {
                     "            source.delta_timestamp, 0) " +
                     "    WHERE NOT EXISTS ( " +
                     "        SELECT 1 " +
-                    "        FROM %s " +
+                    "        FROM \"%s\" " +
                     "        WHERE me_name = source.me_name AND location = source.location AND is_deleted != 0 " +
                     "    )";
 

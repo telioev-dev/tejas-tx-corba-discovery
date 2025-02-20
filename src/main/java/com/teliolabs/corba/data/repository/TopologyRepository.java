@@ -1,6 +1,5 @@
 package com.teliolabs.corba.data.repository;
 
-
 import com.teliolabs.corba.application.types.DiscoveryItemType;
 import com.teliolabs.corba.config.DataSourceConfig;
 import com.teliolabs.corba.data.domain.TopologyEntity;
@@ -64,8 +63,11 @@ public class TopologyRepository extends GenericRepository<TopologyEntity> {
                     ps.setString(18, topology.getRingName());
                     ps.setString(19, topology.getInconsistent());
                     ps.setString(20, topology.getTechnologyLayer());
-                    ps.setString(21, topology.getCircle());
-                    ps.setTimestamp(22, Timestamp.from(topology.getLastModifiedDate().toInstant()));
+                    ps.setString(21,
+                            StringUtils.trimString(
+                                    topology.getTopologyType() != null ? topology.getTopologyType().value() : null));
+                    ps.setString(22, topology.getCircle());
+                    ps.setTimestamp(23, Timestamp.from(topology.getLastModifiedDate().toInstant()));
                     ps.addBatch();
                     // Execute batch after every 100 elements
                     boolean condition = (i + 1) % 100 == 0 || i == topologies.size() - 1;
@@ -89,7 +91,6 @@ public class TopologyRepository extends GenericRepository<TopologyEntity> {
         return findAll(TopologyResultSetMapper.getInstance()::mapToDto, EquipmentQueries.SELECT_ALL_SQL);
     }
 
-
     private TopologyEntity mapResultSetToTopologyEntity(ResultSet resultSet) throws SQLException {
         return TopologyResultSetMapper.getInstance().mapToEntity(resultSet);
     }
@@ -102,7 +103,9 @@ public class TopologyRepository extends GenericRepository<TopologyEntity> {
         }
         String tableName = DBUtils.getTable(DiscoveryItemType.TOPOLOGY);
         String placeholders = String.join(",", Collections.nCopies(topologiesToDelete.size(), "?"));
-        String sql = String.format(performHardDelete ? TopologyQueries.HARD_DELETE_SQL : TopologyQueries.SOFT_DELETE_SQL, tableName) + "(" + placeholders + ")";
+        String sql = String.format(
+                performHardDelete ? TopologyQueries.HARD_DELETE_SQL : TopologyQueries.SOFT_DELETE_SQL, tableName) + "("
+                + placeholders + ")";
 
         if (performHardDelete) {
             log.info("Performing hard delete for topologies.");
@@ -110,9 +113,8 @@ public class TopologyRepository extends GenericRepository<TopologyEntity> {
             log.info("Performing soft delete for topologies.");
         }
 
-
         try (Connection connection = DataSourceConfig.getHikariDataSource().getConnection();
-             PreparedStatement ps = connection.prepareStatement(sql)) {
+                PreparedStatement ps = connection.prepareStatement(sql)) {
 
             connection.setAutoCommit(false); // Disable auto-commit for batch processing
 
@@ -137,7 +139,7 @@ public class TopologyRepository extends GenericRepository<TopologyEntity> {
         }
 
         String tableName = DBUtils.getTable(DiscoveryItemType.TOPOLOGY);
-        String sql = String.format(TopologyQueries.INSERT_SQL, tableName);
+        String sql = String.format(TopologyQueries.UPSERT_SQL, tableName, tableName);
         int totalInserted = 0;
 
         try (Connection connection = DataSourceConfig.getHikariDataSource().getConnection()) {
@@ -195,11 +197,11 @@ public class TopologyRepository extends GenericRepository<TopologyEntity> {
         ps.setString(18, StringUtils.trimString(topology.getRingName()));
         ps.setString(19, StringUtils.trimString(topology.getInconsistent()));
         ps.setString(20, StringUtils.trimString(topology.getTechnologyLayer()));
-        ps.setString(21, StringUtils.trimString(topology.getTopologyType() != null ? topology.getTopologyType().value() : null));
+        ps.setString(21,
+                StringUtils.trimString(topology.getTopologyType() != null ? topology.getTopologyType().value() : null));
         ps.setString(22, StringUtils.trimString(topology.getCircle()));
         ps.setTimestamp(23, Timestamp.from(topology.getLastModifiedDate().toInstant()));
     }
-
 
     @Override
     protected String getTableName() {

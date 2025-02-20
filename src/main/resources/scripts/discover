@@ -1,7 +1,7 @@
 #!/bin/bash
 
-APP_JAR="$ECI_STITCHING_HOME"/bin/tx-corba-discovery.jar
-LOG_DIR="$ECI_STITCHING_HOME"/logs
+APP_JAR="$TEJAS_STITCHING_HOME"/bin/tx-corba-discovery.jar
+LOG_DIR="$TEJAS_STITCHING_HOME"/logs
 
 JOB=
 CIRCLE=

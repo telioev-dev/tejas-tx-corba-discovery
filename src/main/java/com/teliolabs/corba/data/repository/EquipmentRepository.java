@@ -139,7 +139,7 @@ public class EquipmentRepository extends GenericRepository<EquipmentEntity> {
         preparedStatement.setString(1, StringUtils.trimString(entity.getMeName()));
         preparedStatement.setString(2, StringUtils.trimString(entity.getMeLabel()));
         preparedStatement.setString(3, StringUtils.trimString(entity.getUserLabel()));
-        preparedStatement.setString(4, StringUtils.trimString(entity.getSoftwareVersion()));
+        preparedStatement.setString(4, StringUtils.trimString(entity.getSoftwareVersion())== null ? "" : entity.getSoftwareVersion());
         preparedStatement.setString(5, StringUtils.trimString(entity.getSerialNumber()));
         preparedStatement.setString(6, StringUtils.trimString(entity.getExpectedEquipment()));
         preparedStatement.setString(7, StringUtils.trimString(entity.getInstalledEquipment()));
@@ -152,7 +152,7 @@ public class EquipmentRepository extends GenericRepository<EquipmentEntity> {
         preparedStatement.setString(1, StringUtils.trimString(entity.getMeName()));
         preparedStatement.setString(2, StringUtils.trimString(entity.getMeLabel()));
         preparedStatement.setString(3, StringUtils.trimString(entity.getUserLabel()));
-        preparedStatement.setString(4, StringUtils.trimString(entity.getSoftwareVersion()));
+        preparedStatement.setString(4, StringUtils.trimString(entity.getSoftwareVersion())== null ? "" : entity.getSoftwareVersion());
         preparedStatement.setString(5, StringUtils.trimString(entity.getSerialNumber()));
         preparedStatement.setString(6, StringUtils.trimString(entity.getExpectedEquipment()));
         preparedStatement.setString(7, StringUtils.trimString(entity.getInstalledEquipment()));

@@ -14,7 +14,7 @@ circle="$2"
 entities=("ME" "EQUIPMENT" "PTP" "TOPOLOGY" "NIA_VIEW" "SNC" "SNC_PACKET" "ROUTE" "ROUTE_PACKET" "TRAIL")
 
 # Log directory and file
-log_dir="$ECI_STITCHING_HOME/logs/$circle/import"
+log_dir="$TEJAS_STITCHING_HOME/logs/$circle/import"
 log_file="$log_dir/import.log"
 
 # Ensure log directory exists
@@ -32,11 +32,11 @@ for entity in "${entities[@]}"; do
     entity_log="$log_dir/import_$entity.log"
     echo "Starting discovery for entity: $entity with job: import, vendor: $vendor, circle: $circle" >> "$log_file"
 
-    CMD="$ECI_STITCHING_HOME/scripts/discover --job=import --vendor=$vendor --db_profile=PROD --circle=$circle --entity=$entity --timestamp=$timestamp"
+    CMD="$TEJAS_STITCHING_HOME/scripts/discover --job=import --vendor=$vendor --db_profile=PROD --circle=$circle --entity=$entity --timestamp=$timestamp"
 
     # Add extra argument for NIA_VIEW
     if [ "$entity" == "NIA_VIEW" ]; then
-        CMD+=" --view_name=ECI_ALL_NIA"
+        CMD+=" --view_name=TEJAS_ALL_NIA"
     fi
 
     echo "CMD to execution: $CMD" >> "$log_file"

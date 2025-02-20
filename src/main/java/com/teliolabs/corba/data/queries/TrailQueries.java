@@ -1,7 +1,7 @@
 package com.teliolabs.corba.data.queries;
 
 public class TrailQueries {
-    public static final String INSERT_SDH_TRAIL = "INSERT INTO %s (" +
+    public static final String INSERT_SDH_TRAIL = "INSERT INTO \"%s\" (" +
             "\"TRAIL_ID\", \"USER_LABEL\", \"CIRCUIT_ID\", \"RATE\", \"TECHNOLOGY\", \"SPECIFICATION\", " +
             "\"PATH_TYPE\", \"TOPOLOGY\", \"A_END_DROP_NODE\", \"Z_END_DROP_NODE\", " +
             "\"A_END_DROP_PORT\", \"Z_END_DROP_PORT\", \"SEQUENCE\", \"CHANNEL\", \"A_END_NODE\", " +
@@ -10,7 +10,7 @@ public class TrailQueries {
             ") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
 
-    public static final String INSERT_EOS_TRAIL = "INSERT INTO %s"
+    public static final String INSERT_EOS_TRAIL = "INSERT INTO \"%s\""
             + " (TRAIL_ID, USER_LABEL, V_CAT, CIRCUIT_ID, SRF_ID, LAYER_RATE, RATE, TECHNOLOGY , SPECIFICATION, PATH_TYPE, "
             + " TOPOLOGY, A_END_DROP_NODE, Z_END_DROP_NODE, A_END_DROP_PORT, Z_END_DROP_PORT, SEQUENCE, CHANNEL, A_END_NODE, Z_END_NODE, A_END_PORT, "
             + " Z_END_PORT, TOPOLOGY_TYPE, LAST_MODIFIED_TIME) "
@@ -50,8 +50,8 @@ public class TrailQueries {
             "           WHEN sn.A_END_ME LIKE '%UME%'\n" +
             "               THEN\n" +
             "               (SELECT NVL(p.ME_LABEL, 'N/F')\n" +
-            "                FROM %s r\n" +
-            "                         LEFT JOIN %s p\n" +
+            "                FROM \"%s\" r\n" +
+            "                         LEFT JOIN \"%s\" p\n" +
             "                                   ON r.Z_END_ME = p.ME_NAME\n" +
             "                                       AND r.Z_END_PTP = p.ptp_id\n" +
             "                WHERE r.snc_id = a.snc_id\n" +
@@ -61,7 +61,7 @@ public class TrailQueries {
             "                  AND r.Z_END_ME NOT LIKE '%UME%'\n" +
             "                  AND r.TUPLE_B =\n" +
             "                      (SELECT (MAX(TO_NUMBER(TUPLE_B)))\n" +
-            "                       FROM %s\n" +
+            "                       FROM \"%s\"\n" +
             "                       WHERE snc_id = a.snc_id\n" +
             "                         AND path_type = 'MAIN'\n" +
             "                         AND TUPLE_A = '1'\n" +

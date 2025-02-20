@@ -16,7 +16,8 @@ public abstract class GenericRepository<T> {
 
     public int truncate() {
         String tableName = getTableName();
-        String sql = String.format("TRUNCATE TABLE %s", tableName);
+        String sql = String.format("TRUNCATE TABLE \"%s\"", tableName);
+
         int recordsDeleted = 0;
         try (Connection connection = DataSourceConfig.getHikariDataSource().getConnection();
              Statement stmt = connection.createStatement()) {

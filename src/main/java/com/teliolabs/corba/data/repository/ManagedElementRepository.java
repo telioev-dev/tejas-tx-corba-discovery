@@ -1,6 +1,5 @@
 package com.teliolabs.corba.data.repository;
 
-
 import com.teliolabs.corba.application.ExecutionContext;
 import com.teliolabs.corba.application.types.DiscoveryItemType;
 import com.teliolabs.corba.config.DataSourceConfig;
@@ -31,35 +30,33 @@ public class ManagedElementRepository extends GenericRepository<ManagedElementEn
     // Singleton instance
     private static final ManagedElementRepository INSTANCE = new ManagedElementRepository();
 
-
     // Public method to get the instance
     public static ManagedElementRepository getInstance() {
         return INSTANCE;
     }
-
 
     @Override
     protected String getTableName() {
         return DBUtils.getTable(DiscoveryItemType.ME);
     }
 
-
     @Override
-    protected void setPreparedStatementParameters(PreparedStatement ps, ManagedElementEntity entity) throws SQLException {
+    protected void setPreparedStatementParameters(PreparedStatement ps, ManagedElementEntity entity)
+            throws SQLException {
 
     }
-
 
     public List<ManagedElementEntity> findAllManagedElements(boolean fetchDeleted) {
-        return findAll(ManagedElementResultSetMapper.getInstance()::mapToEntity, fetchDeleted ? ManagedElementQueries.SELECT_ALL_SQL : ManagedElementQueries.SELECT_ALL_NON_DELETED_SQL);
+        return findAll(ManagedElementResultSetMapper.getInstance()::mapToEntity,
+                fetchDeleted ? ManagedElementQueries.SELECT_ALL_SQL : ManagedElementQueries.SELECT_ALL_NON_DELETED_SQL);
     }
 
-
-    public <T> List<T> findAllManagedElements(ResultSetMapperFunction<ResultSet, T> mapperFunction, boolean excludeDeleted) {
+    public <T> List<T> findAllManagedElements(ResultSetMapperFunction<ResultSet, T> mapperFunction,
+            boolean excludeDeleted) {
         log.info("findAllManagedElements - excludeDeleted: {}", excludeDeleted);
-        return findAll(mapperFunction, excludeDeleted ? ManagedElementQueries.SELECT_ALL_NON_DELETED_SQL : ManagedElementQueries.SELECT_ALL_SQL);
+        return findAll(mapperFunction, excludeDeleted ? ManagedElementQueries.SELECT_ALL_NON_DELETED_SQL
+                : ManagedElementQueries.SELECT_ALL_SQL);
     }
-
 
     private ManagedElementEntity mapResultSetToManagedElementEntity(ResultSet resultSet) throws SQLException {
         return ManagedElementResultSetMapper.getInstance().mapToEntity(resultSet);
@@ -72,7 +69,10 @@ public class ManagedElementRepository extends GenericRepository<ManagedElementEn
     public void deleteManagedElements(List<String> managedElementsToDelete, boolean performHardDelete) {
 
         String tableName = DBUtils.getTable(DiscoveryItemType.ME);
-        String sql = String.format(performHardDelete ? ManagedElementQueries.HARD_DELETE_SQL : ManagedElementQueries.SOFT_DELETE_SQL, tableName) + "(" +
+        String sql = String
+                .format(performHardDelete ? ManagedElementQueries.HARD_DELETE_SQL
+                        : ManagedElementQueries.SOFT_DELETE_SQL, tableName)
+                + "(" +
                 String.join(",", Collections.nCopies(managedElementsToDelete.size(), "?")) + ")";
 
         if (performHardDelete) {
@@ -119,7 +119,7 @@ public class ManagedElementRepository extends GenericRepository<ManagedElementEn
         try (Connection connection = DataSourceConfig.getHikariDataSource().getConnection()) {
             connection.setAutoCommit(false); // Disable auto-commit for batch processing
             try (PreparedStatement deleteStatement = connection.prepareStatement(deleteSQL);
-                 PreparedStatement stmt = connection.prepareStatement(sql)) {
+                    PreparedStatement stmt = connection.prepareStatement(sql)) {
                 // Step 1: Execute DELETE statement
                 int rowsDeleted = deleteStatement.executeUpdate();
                 log.info("These many MEs deleted successfully: {}", rowsDeleted);
@@ -137,14 +137,14 @@ public class ManagedElementRepository extends GenericRepository<ManagedElementEn
                     stmt.setString(6, StringUtils.trimString(managedElement.getSoftwareVersion()));
                     stmt.setString(7, StringUtils.trimString(managedElement.getLocation()));
                     stmt.setInt(8, managedElement.getCommunicationState().getState());
-                    stmt.setString(9, StringUtils.trimString(managedElement.getCircle()));
+                    stmt.setString(9, StringUtils.trimString(managedElement.getCircle())== null ? "" : managedElement.getCircle());
                     stmt.setTimestamp(10, Timestamp.from(managedElement.getLastModifiedDate().toInstant()));
 
                     stmt.addBatch(); // Add to batch
 
                     // Execute batch after every 100 elements
                     boolean condition = (i + 1) % 100 == 0 || i == managedElements.size() - 1;
-                    //log.info("Condition: {}", condition);
+                    // log.info("Condition: {}", condition);
                     if (condition) {
                         int[] batchResult = stmt.executeBatch(); // Execute the batch
                         connection.commit();
@@ -162,7 +162,6 @@ public class ManagedElementRepository extends GenericRepository<ManagedElementEn
         }
         return result;
     }
-
 
     public void upsertManagedElements(List<ManagedElement> managedElements) throws SQLException {
         int[] result = new int[managedElements.size()];
@@ -191,7 +190,7 @@ public class ManagedElementRepository extends GenericRepository<ManagedElementEn
                     stmt.setString(6, StringUtils.trimString(managedElement.getSoftwareVersion()));
                     stmt.setString(7, StringUtils.trimString(managedElement.getLocation()));
                     stmt.setInt(8, managedElement.getCommunicationState().getState());
-                    stmt.setString(9, StringUtils.trimString(managedElement.getCircle()));
+                    stmt.setString(9, StringUtils.trimString(managedElement.getCircle())== null ? "" : managedElement.getCircle());
                     stmt.setTimestamp(10, Timestamp.from(managedElement.getLastModifiedDate().toInstant()));
                     stmt.setTimestamp(11, Timestamp.from(executionContext.getExecutionTimestamp().toInstant()));
                     stmt.addBatch();

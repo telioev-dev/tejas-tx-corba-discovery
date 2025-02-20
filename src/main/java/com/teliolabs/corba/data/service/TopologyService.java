@@ -220,8 +220,9 @@ public class TopologyService implements DiscoveryService {
 
             int batchSize = ExecutionContext.getInstance().getCircle().getTopologyHowMuch();
             start = System.currentTimeMillis();
-            corbaConnection.getMlsnManager().getAllTopologicalLinks(ExecutionMode.DELTA == ExecutionContext.getInstance().getExecutionMode() ?
-                    buildDeltaSearchCriteria(subnetwork) : subnetwork.name, batchSize, linkListHolder, iteratorHolder);
+            corbaConnection.getEmsManager().getAllTopLevelTopologicalLinks(batchSize, linkListHolder, iteratorHolder);
+            // corbaConnection.getMlsnManager().getAllTopologicalLinks(ExecutionMode.DELTA == ExecutionContext.getInstance().getExecutionMode() ?
+            //         buildDeltaSearchCriteria(subnetwork) : subnetwork.name, batchSize, linkListHolder, iteratorHolder);
             TopologicalLink_T[] topologicalLinkTs = linkListHolder.value;
             if (isExecutionModeImport()) {
                 saveTopologies(topologicalLinkTs);

@@ -1,4 +1,4 @@
 #!/usr/bin/env bash
 
 mvn clean install -Dmaven.test.skip=true
-scp target/bin/tx-corba-discovery.jar oracle@prodniapp:/opt/eci-stitching/bin
+scp target/bin/tx-corba-discovery.jar oracle@prodniapp:/opt/tejas-stitching/bin
