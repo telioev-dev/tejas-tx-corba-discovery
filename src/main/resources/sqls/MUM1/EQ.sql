@@ -10,7 +10,7 @@ CREATE TABLE "TEJASNETWORKS_EQUIPMENT_MUM 1"
     expected_equipment  VARCHAR2(255),
     installed_equipment VARCHAR2(255),
     location            VARCHAR2(255),
-    circle             VARCHAR2(255) DEFAULT 'MUM1',      -- Circle
+    circle             VARCHAR2(255) DEFAULT 'MUM',      -- Circle
     vendor             VARCHAR2(50) DEFAULT 'TEJAS',
     is_deleted          NUMBER(1,0) DEFAULT 0,
     last_modified_date  TIMESTAMP WITH TIME ZONE,

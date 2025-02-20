@@ -25,7 +25,7 @@ CREATE TABLE "TEJASNETWORKS_TOPOLOGY_MUM 1"
     inconsistent       VARCHAR2(50),
     technology_layer   VARCHAR2(50),
     topology_type      VARCHAR2(10),
-    circle             VARCHAR2(50) DEFAULT 'MUM1',
+    circle             VARCHAR2(50) DEFAULT 'MUM',
     vendor             VARCHAR2(50) DEFAULT 'TEJAS',
     last_modified_date TIMESTAMP WITH TIME ZONE,
     is_deleted         NUMBER(1,0) DEFAULT 0,

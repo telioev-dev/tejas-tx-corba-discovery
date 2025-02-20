@@ -15,8 +15,11 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 
 import java.sql.*;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
 @Log4j2
@@ -139,8 +142,20 @@ public class TopologyRepository extends GenericRepository<TopologyEntity> {
         }
 
         String tableName = DBUtils.getTable(DiscoveryItemType.TOPOLOGY);
-        String sql = String.format(TopologyQueries.UPSERT_SQL, tableName, tableName);
+        String sql = String.format(TopologyQueries.INSERT_SQL, tableName);
         int totalInserted = 0;
+
+        // Check for duplicates before inserting
+        Set<String> existingTpLinks = new HashSet<>();
+        List<Topology> uniqueTopologies = new ArrayList<>();
+        for (Topology topology : topologies) {
+            if (existingTpLinks.contains(topology.getTpLinkName())) {
+                log.warn("Duplicate topology found before insert: " + topology.getTpLinkName());
+            } else {
+                existingTpLinks.add(topology.getTpLinkName());
+                uniqueTopologies.add(topology);
+            }
+        }
 
         try (Connection connection = DataSourceConfig.getHikariDataSource().getConnection()) {
             connection.setAutoCommit(false);
@@ -148,7 +163,7 @@ public class TopologyRepository extends GenericRepository<TopologyEntity> {
             try (PreparedStatement ps = connection.prepareStatement(sql)) {
                 int batchCounter = 0;
 
-                for (Topology topology : topologies) {
+                for (Topology topology : uniqueTopologies) {
                     setPreparedStatementParameters(ps, topology);
                     ps.addBatch();
                     batchCounter++;

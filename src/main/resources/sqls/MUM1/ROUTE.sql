@@ -14,7 +14,7 @@ CREATE TABLE "TEJASNETWORKS_ROUTE_MUM 1"
     tuple_a            NUMBER(6),
     tuple_b            NUMBER(6),
     tuple              VARCHAR(255),
-    circle             VARCHAR2(50) DEFAULT 'MUM 1',
+    circle             VARCHAR2(50) DEFAULT 'MUM',
     vendor             VARCHAR2(50) DEFAULT 'TEJAS',
     is_deleted         NUMBER(1,0) DEFAULT 0,
     last_modified_date TIMESTAMP WITH TIME ZONE,

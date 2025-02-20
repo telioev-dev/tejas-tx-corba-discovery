@@ -20,7 +20,7 @@ CREATE TABLE "TEJASNETWORKS_SNC_MUM 1"
     z_end_ptp          VARCHAR2(255),
     z_end_ptp_label    VARCHAR2(255),
     z_end_channel      VARCHAR2(255),
-    circle             VARCHAR2(50) DEFAULT 'MUM1',
+    circle             VARCHAR2(50) DEFAULT 'MUM',
     vendor             VARCHAR2(50) DEFAULT 'TEJAS',
     is_deleted         NUMBER(1,0) DEFAULT 0,
     last_modified_date TIMESTAMP WITH TIME ZONE,

@@ -10,7 +10,7 @@ CREATE TABLE "TEJASNETWORKS_ME_MUM 1"
     software_version   VARCHAR2(255),      -- Software Version
     location           VARCHAR2(255),      -- Location
     communication_state           NUMBER(1,0),      -- Communication State
-    circle             VARCHAR2(255) DEFAULT 'MUM1',      -- Circle
+    circle             VARCHAR2(255) DEFAULT 'MUM',      -- Circle
     vendor             VARCHAR2(50) DEFAULT 'TEJAS',
     last_modified_date TIMESTAMP,          -- Last modified date, using timestamp for timezone support
     is_deleted         NUMBER(1,0) DEFAULT 0,

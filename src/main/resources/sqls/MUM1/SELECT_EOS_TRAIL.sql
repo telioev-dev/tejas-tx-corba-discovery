@@ -45,8 +45,8 @@ SELECT a.snc_id            AS trail_id,
            WHEN sn.A_END_ME LIKE '%UME%'
                THEN
                (SELECT NVL(p.ME_LABEL, 'N/F')
-                FROM eci_route_mum r
-                         LEFT JOIN eci_ptp_mum p
+                FROM "tejasnetworks_route_mum 1" r
+                         LEFT JOIN "tejasnetworks_ptp_mum 1" p
                                    ON r.Z_END_ME = p.ME_NAME
                                        AND r.Z_END_PTP = p.ptp_id
                 WHERE r.snc_id = a.snc_id
@@ -56,7 +56,7 @@ SELECT a.snc_id            AS trail_id,
                   AND r.Z_END_ME NOT LIKE '%UME%'
                   AND r.TUPLE_B =
                       (SELECT (MAX(TO_NUMBER(TUPLE_A)))
-                       FROM eci_route_mum
+                       FROM "tejasnetworks_route_mum 1"
                        WHERE snc_id = a.snc_id
                          AND path_type = 'MAIN'
                          AND TUPLE_A = '1'
@@ -73,8 +73,8 @@ SELECT a.snc_id            AS trail_id,
            WHEN sn.Z_END_ME LIKE '%UME%'
                THEN
                (SELECT NVL(p.ME_LABEL, 'N/F')
-                FROM eci_route_mum r
-                         LEFT JOIN eci_ptp_mum p
+                FROM "tejasnetworks_route_mum 1" r
+                         LEFT JOIN "tejasnetworks_ptp_mum 1" p
                                    ON r.Z_END_ME = p.ME_NAME
                                        AND r.Z_END_PTP = p.ptp_id
                 WHERE r.snc_id = a.snc_id
@@ -84,7 +84,7 @@ SELECT a.snc_id            AS trail_id,
                   AND r.Z_END_ME NOT LIKE '%UME%'
                   AND r.TUPLE_B =
                       (SELECT (MIN(TO_NUMBER(TUPLE_B)))
-                       FROM eci_route_mum
+                       FROM "tejasnetworks_route_mum 1"
                        WHERE snc_id = a.snc_id
                          AND path_type = 'M'
                          AND TUPLE_A = '1'
@@ -101,8 +101,8 @@ SELECT a.snc_id            AS trail_id,
            WHEN sn.A_END_ME LIKE '%UME%'
                THEN
                (SELECT p.port_native_name || '#' || p.ptp_id
-                FROM eci_route_mum r
-                         LEFT JOIN eci_ptp_mum p
+                FROM "tejasnetworks_route_mum 1" r
+                         LEFT JOIN "tejasnetworks_ptp_mum 1" p
                                    ON r.Z_END_ME = p.ME_NAME
                                        AND r.Z_END_PTP = p.ptp_id
                 WHERE r.snc_id = a.snc_id
@@ -112,7 +112,7 @@ SELECT a.snc_id            AS trail_id,
                   AND r.Z_END_ME NOT LIKE '%UME%'
                   AND r.TUPLE_B =
                       (SELECT (MAX(TO_NUMBER(TUPLE_B)))
-                       FROM eci_route_mum
+                       FROM "tejasnetworks_route_mum 1"
                        WHERE snc_id = a.snc_id
                          AND path_type = 'MAIN'
                          AND TUPLE_A = '1'
@@ -129,8 +129,8 @@ SELECT a.snc_id            AS trail_id,
            WHEN sn.Z_END_ME LIKE '%UME%'
                THEN
                (SELECT p.port_native_name || '#' || p.ptp_id
-                FROM eci_route_mum r
-                         LEFT JOIN eci_ptp_mum p
+                FROM "tejasnetworks_route_mum 1" r
+                         LEFT JOIN "tejasnetworks_ptp_mum 1" p
                                    ON r.Z_END_ME = p.ME_NAME
                                        AND r.Z_END_PTP = p.ptp_id
                 WHERE r.snc_id = a.snc_id
@@ -140,7 +140,7 @@ SELECT a.snc_id            AS trail_id,
                   AND r.Z_END_ME NOT LIKE '%UME%'
                   AND r.TUPLE_B =
                       (SELECT (MIN(TO_NUMBER(TUPLE_B)))
-                       FROM eci_route_mum
+                       FROM "tejasnetworks_route_mum 1"
                        WHERE snc_id = a.snc_id
                          AND path_type = 'M'
                          AND TUPLE_A = '1'
@@ -160,7 +160,7 @@ SELECT a.snc_id            AS trail_id,
            SELECT
            DISTINCT A_END_CTP
            FROM
-           eci_route_mum
+           "tejasnetworks_route_mum 1"
            WHERE
            snc_id = a.snc_id
            AND A_END_ME = a.A_END_ME
@@ -256,8 +256,8 @@ AS topology_type,
                 		          "tejasnetworks_ptp_mum 1" p2
                 				WHERE
                 					r1.snc_id = r2.snc_id
-                					AND r1.tuple_a = (SELECT MIN(tuple_a) FROM eci_route_mum   WHERE PATH_TYPE = 'PROTECTION' AND SNC_ID = r1.snc_id)
-                					AND r2.tuple_a = (SELECT MIN(tuple_a) FROM eci_route_mum  WHERE PATH_TYPE = 'PROTECTION' AND SNC_ID = r2.snc_id)
+                					AND r1.tuple_a = (SELECT MIN(tuple_a) FROM "tejasnetworks_route_mum 1"   WHERE PATH_TYPE = 'PROTECTION' AND SNC_ID = r1.snc_id)
+                					AND r2.tuple_a = (SELECT MIN(tuple_a) FROM "tejasnetworks_route_mum 1"  WHERE PATH_TYPE = 'PROTECTION' AND SNC_ID = r2.snc_id)
                 					AND r1.path_type = 'PROTECTION'
                 					AND r2.path_type = 'PROTECTION'
                 					AND ( TO_NUMBER(r2.tuple_b) - TO_NUMBER(r1.tuple_b) = 2 )
