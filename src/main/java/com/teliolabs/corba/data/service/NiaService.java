@@ -27,6 +27,6 @@ public class NiaService {
     }
 
     public void publishNiaView(String viewName) throws SQLException {
-        niaRepository.executeViewFromFile("sqls/nia/eci_all_nia.sql", viewName);
+        niaRepository.executeViewFromFile("sqls/nia/tejas_all_nia.sql", viewName);
     }
 }

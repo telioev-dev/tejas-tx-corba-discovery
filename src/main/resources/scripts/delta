@@ -14,7 +14,7 @@ circle="$2"
 entities=("ME" "EQUIPMENT" "PTP" "TOPOLOGY" "NIA_VIEW" "SNC" "TRAIL")
 
 # Log directory and file
-log_dir="$TEJAS_STITCHING_HOME/logs/$circle/delta"
+log_dir="$TEJAS_STITCHING/logs/$circle/delta"
 log_file="$log_dir/delta.log"
 
 # Ensure log directory exists
@@ -32,7 +32,7 @@ for entity in "${entities[@]}"; do
     entity_log="$log_dir/import_$entity.log"
     echo "Starting delta discovery for entity: $entity with job: import, vendor: $vendor, circle: $circle" >> "$log_file"
 
-    CMD="$TEJAS_STITCHING_HOME/scripts/discover --job=delta --vendor=$vendor --db_profile=PROD --circle=$circle --entity=$entity --delta_days_before=2 --timestamp=$timestamp"
+    CMD="$TEJAS_STITCHING/scripts/discover --job=delta --vendor=$vendor --db_profile=PROD --circle=$circle --entity=$entity --delta_days_before=2 --timestamp=$timestamp"
 
     # Add extra argument for NIA_VIEW
     if [ "$entity" == "NIA_VIEW" ]; then

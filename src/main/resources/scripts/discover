@@ -1,16 +1,16 @@
 #!/bin/bash
 
-APP_JAR="$TEJAS_STITCHING_HOME"/bin/tx-corba-discovery.jar
-LOG_DIR="$TEJAS_STITCHING_HOME"/logs
+APP_JAR="$TEJAS_STITCHING/bin/tx-corba-discovery.jar"
+LOG_DIR="$TEJAS_STITCHING/logs"
 
-JOB=
-CIRCLE=
-VENDOR=
-ENTITY=
-TIMESTAMP=
-DB_PROFILE=
-DELTA_DAYS=
-VIEW_NAME=
+JOB=""
+CIRCLE=""
+VENDOR=""
+ENTITY=""
+TIMESTAMP=""
+DB_PROFILE=""
+DELTA_DAYS=""
+VIEW_NAME=""
 
 # Validate and parse arguments
 for arg in "$@"; do
@@ -20,6 +20,7 @@ for arg in "$@"; do
       ;;
     --circle=*)
       CIRCLE="${arg#*=}"
+      CIRCLE="${CIRCLE//\"/}"  # Remove any accidental quotes
       ;;
     --vendor=*)
       VENDOR="${arg#*=}"
@@ -48,7 +49,7 @@ done
 
 # Check if all required arguments are provided
 if [[ -z "$JOB" || -z "$CIRCLE" || -z "$VENDOR" || -z "$ENTITY" || -z "$TIMESTAMP" || -z "$DB_PROFILE" ]]; then
-  echo "Usage: $0 --job=<job> --circle=<circle> --vendor=<vendor> --entity=<entity> --timestamp=<timestamp>"
+  echo "Usage: $0 --job=<job> --circle=<circle> --vendor=<vendor> --entity=<entity> --timestamp=<timestamp> --db_profile=<db_profile>"
   echo "All arguments are required."
   exit 1
 fi
@@ -62,19 +63,27 @@ echo "  TIMESTAMP: $TIMESTAMP"
 echo "  DELTA_DAYS: $DELTA_DAYS"
 echo "  VIEW_NAME: $VIEW_NAME"
 
-LOG_FILE=$LOG_DIR/$CIRCLE/$JOB-$CIRCLE-$ENTITY.log
+LOG_FILE="$LOG_DIR/$CIRCLE/$JOB-$CIRCLE-$ENTITY.log"
+
+# Ensure log directory exists
+mkdir -p "$LOG_DIR/$CIRCLE"
+
+# Clear or create the log file
 > "$LOG_FILE"
+
 while true; do
   echo "Starting the Java application..."
+
   if [ "$JOB" == "delta" ]; then
     nohup java -XX:+UseG1GC -Dcom.sun.CORBA.transport.ORBTCPReadTimeouts="1:60000:300:1" -jar "$APP_JAR" \
       --job="$JOB" --circle="$CIRCLE" --vendor="$VENDOR" --db_profile="$DB_PROFILE" --entity="$ENTITY" \
-      --timestamp="$TIMESTAMP" --delta_days_before="$DELTA_DAYS" --view_name="$VIEW_NAME"> "$LOG_FILE" 2>&1 &
+      --timestamp="$TIMESTAMP" --delta_days_before="$DELTA_DAYS" --view_name="$VIEW_NAME" > "$LOG_FILE" 2>&1 &
   else
     nohup java -XX:+UseG1GC -Dcom.sun.CORBA.transport.ORBTCPReadTimeouts="1:60000:300:1" -jar "$APP_JAR" \
       --job="$JOB" --circle="$CIRCLE" --vendor="$VENDOR" --db_profile="$DB_PROFILE" --entity="$ENTITY" \
-      --timestamp="$TIMESTAMP" --view_name="$VIEW_NAME"> $LOG_FILE 2>&1 &
+      --timestamp="$TIMESTAMP" --view_name="$VIEW_NAME" > "$LOG_FILE" 2>&1 &
   fi
+
   PID=$!  # Get the PID of the background process
 
   echo "Java application started with PID: $PID"
@@ -87,11 +96,10 @@ while true; do
 
   # Check exit code to decide restart
   if [ "$EXIT_CODE" -eq 444 ]; then
-    echo "Restarting the Java application due to exit code being less than 10..."
+    echo "Restarting the Java application due to exit code being 444..."
     sleep 5  # Optional: Add a delay before restarting
   else
     echo "Exiting monitor script. Exit code: $EXIT_CODE."
     break
   fi
 done
-
