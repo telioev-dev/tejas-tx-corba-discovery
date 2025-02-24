@@ -167,10 +167,10 @@ public class TopologyService implements DiscoveryService {
 
         try {
             List<MultiLayerSubnetwork_T> subnetworks = fetchAllSubnetworks(corbaConnection);
-
+            processSubnetwork(corbaConnection);
             for (MultiLayerSubnetwork_T subnetwork : subnetworks) {
                 logSubnetworkDetails(subnetwork);
-                processSubnetwork(subnetwork, corbaConnection);
+
             }
             updateJobStatus();
             if (topologicalLinkTList != null && !topologicalLinkTList.isEmpty()
@@ -244,7 +244,7 @@ public class TopologyService implements DiscoveryService {
     // throw e;
     // }
     // }
-    private void processSubnetwork(MultiLayerSubnetwork_T subnetwork, CorbaConnection corbaConnection)
+    private void processSubnetwork(CorbaConnection corbaConnection)
             throws SQLException, ProcessingFailureException {
         try {
             TopologicalLinkList_THolder linkListHolder = new TopologicalLinkList_THolder();
@@ -258,21 +258,19 @@ public class TopologyService implements DiscoveryService {
             // buildDeltaSearchCriteria(subnetwork) : subnetwork.name, batchSize,
             // linkListHolder, iteratorHolder);
             TopologicalLink_T[] topologicalLinkTs = linkListHolder.value;
-            ExecutionMode executionMode = ExecutionContext.getInstance().getExecutionMode();
-
-            if (ExecutionMode.IMPORT.equals(executionMode)) {
+            if (isExecutionModeImport()) {
                 saveTopologies(topologicalLinkTs);
-            } else if (ExecutionMode.DELTA.equals(executionMode)) {
+            } else {
                 processDelta(topologicalLinkTs);
             }
 
-            discoveryCount += topologicalLinkTs.length;
+            // discoveryCount += topologicalLinkTs.length;
             topologicalLinkTs = null;
             processTopologicalLinks(linkListHolder, iteratorHolder);
             end = System.currentTimeMillis();
             printDiscoveryResult(end - start);
         } catch (Exception e) {
-            log.error("Failed to process subnetwork: {}", Arrays.toString(subnetwork.name), e);
+            log.error("Failed to process subnetwork: {}");
             throw e;
         }
     }
@@ -288,12 +286,12 @@ public class TopologyService implements DiscoveryService {
                     hasMoreData = iterator.next_n(batchSize, linkListHolder);
                     discoveryCount = discoveryCount + linkListHolder.value.length;
                     TopologicalLink_T[] topologicalLinkTs = linkListHolder.value;
-                    ExecutionMode executionMode = ExecutionContext.getInstance().getExecutionMode();
-                    if (ExecutionMode.IMPORT.equals(executionMode)) {
+                    if (isExecutionModeImport()) {
                         saveTopologies(topologicalLinkTs);
-                    } else if (ExecutionMode.DELTA.equals(executionMode)) {
+                    } else {
                         processDelta(topologicalLinkTs);
                     }
+
                     topologicalLinkTs = null;
                     linkListHolder.value = null;
                     if (discoveryCount % 1000 == 0) {

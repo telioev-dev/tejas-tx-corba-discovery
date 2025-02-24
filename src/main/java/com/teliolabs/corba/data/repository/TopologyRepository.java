@@ -142,7 +142,7 @@ public class TopologyRepository extends GenericRepository<TopologyEntity> {
         }
 
         String tableName = DBUtils.getTable(DiscoveryItemType.TOPOLOGY);
-        String sql = String.format(TopologyQueries.UPSERT_SQL, tableName);
+        String sql = String.format(TopologyQueries.UPSERT_SQL, tableName, tableName);
         int totalInserted = 0;
 
         // Check for duplicates before inserting
